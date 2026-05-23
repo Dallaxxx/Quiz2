@@ -148,6 +148,9 @@
                     
                     .map-node-attempts { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; justify-content: center; }
                     .attempt-chip { font-size: 11px; padding: 3px 8px; border-radius: 6px; background: var(--bg-workspace); border: 1px solid var(--border-light); color: var(--text-muted); font-weight: 700; }
+                    .attempt-chip.is-max { background: linear-gradient(135deg, #ff6b00, #cc1100); color: white; border: none; animation: firePulse 1.2s infinite alternate; box-shadow: 0 0 8px rgba(255,80,0,0.5); }
+                    .score-chips-row { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px; align-items: center; }
+                    .score-chips-label { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-right: 2px; }
                     
                     body[data-theme="xmind-classic"] .level-exam .map-node-card { background: var(--accent-indigo); color: white; border-radius: 12px;}
                     body[data-theme="xmind-classic"] .level-subject .map-node-card { background: var(--x-sub); color: white; border-radius: 24px;}
@@ -217,10 +220,7 @@
                 <button id="tabBtnSyllabus" class="tab-btn active">🗂️ Syllabus</button>
                 <button id="tabBtnMindMap" class="tab-btn">🧠 Map</button>
             </div>
-            <div id="globalFireBadge" class="global-fire-badge">
-                <span class="fire-emoji">🔥</span>
-                <span id="globalFireText">0%</span>
-            </div>
+
         </div>
         
         <div id="drawerOverlay" class="drawer-overlay" onclick="toggleSettingsDrawer(false)"></div>
@@ -351,7 +351,7 @@
             <div id="quizFrameHeader">
                 <button class="header-action-btn btn-destructive" onclick="confirmQuizQuit()">Quit</button>
                 <h3 id="activeQuizTitle">Quiz Running...</h3>
-                <button class="header-action-btn btn-accent" onclick="openScoreEntryModal()">📝 Log Score</button>
+
             </div>
             <iframe id="quizIframe" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals" style="width:100%; height:calc(100% - 75px); border:none; background:white; overflow:auto; -webkit-overflow-scrolling:touch;"></iframe>
         </div>
@@ -562,7 +562,7 @@
                 return [];
             }
             let treeData = loadRecoveredData();
-            function saveData() { localStorage.setItem('kagazi_final_db', JSON.stringify(treeData)); populateExamSelect(); updateGlobalFireBadge(); }
+            function saveData() { localStorage.setItem('kagazi_final_db', JSON.stringify(treeData)); populateExamSelect(); }
             
             function hardResetData() {
                 triggerIOSAlert("Hard Reset", "DANGER: This will permanently delete ALL your exams and data. This cannot be undone.", false, null, {
@@ -646,32 +646,7 @@
                 if (e.key === "Enter") document.getElementById("modalBtnSave").click();
             });
             
-            // ================= GLOBAL FIRE BADGE =================
-            function getGlobalHighestScore() {
-                let highest = { pct: 0, score: "-", name: "" };
-                function traverse(nodes) {
-                    nodes.forEach(n => {
-                        if (n.type === "Quiz" && n.highestPct > highest.pct) {
-                            highest = { pct: n.highestPct, score: n.highestScore, name: n.name };
-                        }
-                        if (n.children) traverse(n.children);
-                    });
-                }
-                traverse(treeData);
-                return highest;
-            }
-            
-            function updateGlobalFireBadge() {
-                const badge = document.getElementById("globalFireBadge");
-                const text = document.getElementById("globalFireText");
-                const best = getGlobalHighestScore();
-                if (best.pct > 0) {
-                    text.innerText = best.pct.toFixed(1) + "%";
-                    badge.style.display = "flex";
-                } else {
-                    badge.style.display = "none";
-                }
-            }
+            // Global fire badge removed — scores shown per-quiz individually
             
             // ================= ALERT & EXPORT ENGINE =================
             function triggerIOSAlert(title, desc, isTextarea, initialVal, config) {
@@ -852,18 +827,28 @@
                 nodes.forEach(node => {
                     const isQuiz = node.type === "Quiz"; let status = node.status || "Pending";
                     let subText = "";
+                    let scoreChipsHTML = "";
                     if (isQuiz) {
-                        if (status === "Quitted") subText = "⏳ Quitted / Unfinished";
+                        if (status === "Incomplete") subText = "⏸️ Incomplete";
+                        else if (status === "Discarded") subText = "🗑️ Discarded";
                         else if (status === "Attempted") {
-                            let attemptsStr = node.attempts ? node.attempts.join(', ') : (node.score || '-');
-                            let highestStr = node.highestPct ? `<span class="fire-text">🔥 Highest: ${node.highestPct.toFixed(1)}% (${node.highestScore})</span>` : `✅ Score: ${node.score}`;
-                            subText = `${highestStr}<br><span style="font-size:13px; color:var(--text-muted); display:inline-block; margin-top:4px;">Last 5: [${attemptsStr}]</span>`;
-                        } else subText = "⏳ Pending";
+                            subText = `✅ ${(node.attempts||[]).length} attempt${(node.attempts||[]).length>1?'s':''}`;
+                            // Build chips: last 5, highlight max
+                            const atts = node.attempts || [];
+                            const maxPct = node.highestPct || 0;
+                            let chips = atts.map(a => {
+                                const pts = a.split('/');
+                                const pct = pts.length===2 ? (parseFloat(pts[0])/parseFloat(pts[1]))*100 : 0;
+                                const isMax = node.highestScore === a;
+                                return `<span class="attempt-chip${isMax?' is-max':''}">${isMax?'🔥 ':''}${a}${pct>0?' ('+pct.toFixed(0)+'%)':''}</span>`;
+                            }).join('');
+                            scoreChipsHTML = `<div class="score-chips-row"><span class="score-chips-label">Scores:</span>${chips}</div>`;
+                        } else subText = "⏳ Pending — double-tap to start";
                     } else { subText = 'Double-tap to open ➔ ' + (node.children ? node.children.length : 0) + ' items'; }
                     
                     const card = document.createElement("div"); 
                     card.className = `syllabus-row-card type-${node.type.toLowerCase()} ${isQuiz ? 'status-'+status.toLowerCase() : ''}`;
-                    card.innerHTML = `<div class="row-left-section"><div class="row-icon-box">${node.type[0]}</div><div class="row-text-block"><h4>${node.name}</h4><p>${subText}</p></div></div>`;
+                    card.innerHTML = `<div class="row-left-section"><div class="row-icon-box">${node.type[0]}</div><div class="row-text-block"><h4>${node.name}</h4><p>${subText}</p>${scoreChipsHTML}</div></div>`;
                     attachGestures(card, node, false); syllabusListWrapper.appendChild(card);
                 });
             }
@@ -1172,10 +1157,19 @@
                 let subHTML = "";
                 let attemptsHTML = "";
                 if(isQuiz) {
-                    if (node.status === "Attempted" && node.highestPct) { subHTML = `<span class="map-node-sub fire-text">🔥 ${node.highestPct.toFixed(1)}% (${node.highestScore})</span>`; } 
-                    else if (node.status === "Quitted") { subHTML = `<span class="map-node-sub">Quitted</span>`; } 
-                    if (node.attempts && node.attempts.length > 0) {
-                        attemptsHTML = `<div class="map-node-attempts">${node.attempts.slice(-5).map(a => `<span class="attempt-chip">${a}</span>`).join('')}</div>`;
+                    if (node.status === "Incomplete") {
+                        subHTML = `<span class="map-node-sub" style="color:var(--color-warning)">⏸️ Incomplete</span>`;
+                    } else if (node.status === "Discarded") {
+                        subHTML = `<span class="map-node-sub" style="color:var(--color-danger)">🗑️ Discarded</span>`;
+                    } else if (node.status === "Attempted" && node.attempts && node.attempts.length > 0) {
+                        // Max chip glows, rest normal
+                        const chips = node.attempts.slice(-5).map(a => {
+                            const isMax = node.highestScore === a;
+                            return `<span class="attempt-chip${isMax?' is-max':''}">${isMax?'🔥':''}${a}</span>`;
+                        }).join('');
+                        attemptsHTML = `<div class="map-node-attempts">${chips}</div>`;
+                    } else if (!node.status || node.status === "Pending") {
+                        subHTML = `<span class="map-node-sub">⏳ Pending</span>`;
                     }
                 }
                 
@@ -1295,7 +1289,7 @@
             populateExamSelect(); 
             renderSyllabusListView(); 
             setTimeout(centerMindMap, 100); 
-            updateGlobalFireBadge();
+            // (global badge removed)
         </script>
     </body>
 </html>
