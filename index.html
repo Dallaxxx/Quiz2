@@ -308,8 +308,9 @@
             <div class="modal-card-box">
                 <h3 id="modalBoxTitle">Title</h3>
                 <input type="text" id="modalTextInput" class="modal-styled-input" autocomplete="off">
+                <div id="mutationErrorMsg" style="display:none; color:var(--color-danger); font-size:13px; font-weight:700; margin:-8px 0 8px; padding:10px 14px; background:rgba(239,68,68,0.08); border-radius:8px; border-left:3px solid var(--color-danger);">⚠️ This name already exists here.</div>
                 <button class="modal-btn btn-accent" id="modalBtnSave">Save</button>
-                <button class="modal-btn btn-cancel" onclick="document.getElementById('mutationModal').classList.remove('active')">Cancel</button>
+                <button class="modal-btn btn-cancel" onclick="closeMutationModal()">Cancel</button>
             </div>
         </div>
         
@@ -335,10 +336,13 @@
                     <button class="numpad-btn" onclick="pressNumpad('7')">7</button><button class="numpad-btn" onclick="pressNumpad('8')">8</button><button class="numpad-btn" onclick="pressNumpad('9')">9</button>
                     <button class="numpad-btn numpad-special" onclick="pressNumpad('/')">/</button><button class="numpad-btn" onclick="pressNumpad('0')">0</button><button class="numpad-btn numpad-special" onclick="pressNumpad('backspace')">⌫</button>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                    <button class="modal-btn btn-accent" onclick="saveNumpadScore()">💾 Save Score</button>
-                    <button class="modal-btn btn-destructive" onclick="quitFromScoreModal()">🚪 Quit Without Saving</button>
-                    <button class="modal-btn btn-cancel" onclick="closeScoreModal()">Cancel</button>
+                <div id="scoreModalButtons" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    <button class="modal-btn btn-accent" onclick="saveNumpadScore()">💾 Save & Quit</button>
+                    <div id="quitModeButtons" style="display:none; flex-direction:column; gap:10px;">
+                        <button class="modal-btn" style="background:#f59e0b;color:white;" onclick="markAccidentalExit()">⏸️ Accidental Exit (Incomplete)</button>
+                        <button class="modal-btn btn-destructive" onclick="discardAndQuit()">🗑️ Discard Quiz</button>
+                    </div>
+                    <button class="modal-btn btn-cancel" id="scoreModalCancelBtn" onclick="closeScoreModal()">Cancel</button>
                 </div>
             </div>
         </div>
@@ -589,17 +593,58 @@
                 if(open) highlightActiveTheme();
             }
             
-            function openMutationModal(title, initialVal, callback) {
+            let mutationDuplicateCheckList = null; // set when creating, null when renaming
+
+            function openMutationModal(title, initialVal, callback, duplicateCheckIn) {
                 document.getElementById("modalBoxTitle").innerText = title;
                 let input = document.getElementById("modalTextInput");
-                input.value = initialVal || ""; mutationCallback = callback;
+                input.value = initialVal || "";
+                mutationCallback = callback;
+                mutationDuplicateCheckList = duplicateCheckIn || null;
+                // Hide error on open
+                let errEl = document.getElementById("mutationErrorMsg");
+                if (errEl) { errEl.style.display = "none"; }
                 document.getElementById("mutationModal").classList.add("active");
                 setTimeout(() => input.focus(), 100);
             }
+
+            function closeMutationModal() {
+                document.getElementById("mutationModal").classList.remove("active");
+                let errEl = document.getElementById("mutationErrorMsg");
+                if (errEl) errEl.style.display = "none";
+            }
+
             document.getElementById("modalBtnSave").onclick = () => {
                 let val = document.getElementById("modalTextInput").value.trim();
-                if(val && mutationCallback) { mutationCallback(val); document.getElementById("mutationModal").classList.remove("active"); }
+                if (!val) return;
+                let errEl = document.getElementById("mutationErrorMsg");
+
+                // Duplicate check — only when creating (mutationDuplicateCheckList is set)
+                if (mutationDuplicateCheckList) {
+                    let nameLower = val.toLowerCase();
+                    let isDuplicate = mutationDuplicateCheckList.some(n => n.name.toLowerCase() === nameLower);
+                    if (isDuplicate) {
+                        if (errEl) {
+                            errEl.innerText = '⚠️ "' + val + '" already exists here. Choose a different name.';;
+                            errEl.style.display = "block";
+                        }
+                        document.getElementById("modalTextInput").style.borderColor = "var(--color-danger)";
+                        setTimeout(() => { document.getElementById("modalTextInput").style.borderColor = ""; }, 2000);
+                        return; // Don't close modal
+                    }
+                }
+
+                if (errEl) errEl.style.display = "none";
+                if (mutationCallback) {
+                    mutationCallback(val);
+                    closeMutationModal();
+                }
             };
+
+            // Also allow Enter key to save
+            document.getElementById("modalTextInput").addEventListener("keydown", (e) => {
+                if (e.key === "Enter") document.getElementById("modalBtnSave").click();
+            });
             
             // ================= GLOBAL FIRE BADGE =================
             function getGlobalHighestScore() {
@@ -736,7 +781,7 @@
                         buttons.unshift({ text: "➕ Add Sub-Item", action: () => { 
                             let nextType = node.type === "Exam" ? "Subject" : node.type === "Subject" ? "Topic" : "Quiz";
                             if(nextType === "Quiz") { window.tempImportParent = node; document.getElementById("quizImportInput").click(); }
-                            else { openMutationModal(`Add New ${nextType}`, "", (val) => { if(!node.children) node.children = []; node.children.push({id: "node-"+Date.now(), name: val, type: nextType, isExpanded: true, children:[]}); node.isExpanded = true; saveData(); isMap ? renderMindMapCanvas() : renderSyllabusListView(); }); }
+                            else { openMutationModal(`Add New ${nextType}`, "", (val) => { if(!node.children) node.children = []; node.children.push({id: "node-"+Date.now(), name: val, type: nextType, isExpanded: true, children:[]}); node.isExpanded = true; saveData(); isMap ? renderMindMapCanvas() : renderSyllabusListView(); }, node.children || []); }
                         }});
                     }
                     buttons.push({ text: "Cancel", styleClass: "btn-cancel" });
@@ -838,6 +883,7 @@
                 const nextType = getNextExpectedLevelType();
                 if (nextType === "Quiz") { window.tempImportParent = null; document.getElementById("quizImportInput").click(); } 
                 else {
+                    const siblingsForCheck = getCurrentLevelNodes();
                     openMutationModal(`Create New ${nextType}`, "", (val) => {
                         const newNode = { id: "node-" + Date.now(), name: val, type: nextType, isExpanded: true, children: [] };
                         if (currentPath.length === 0) treeData.push(newNode); else {
@@ -846,7 +892,7 @@
                             if (parentNode) { parentNode.children.push(newNode); parentNode.isExpanded = true; }
                         }
                         saveData(); renderSyllabusListView();
-                    });
+                    }, siblingsForCheck);
                 }
             };
             
@@ -874,6 +920,8 @@
             // ================= QUIZ FRAME & SCORING =================
             function launchRealQuiz(quizNode) {
                 activeQuizNodeForScoring = quizNode;
+                // Crash guard — set before launch, cleared on proper exit
+                localStorage.setItem("kz_crash_guard", JSON.stringify({ id: quizNode.id, name: quizNode.name, time: Date.now() }));
                 if(quizNode.quizHTML) {
                     const antiFreezeScript = `<script>
 (function(){
@@ -959,29 +1007,65 @@
                 }
             }
             
+            // Quit button → show numpad with all 3 exit options
             function confirmQuizQuit() {
-                triggerIOSAlert("Quit Quiz?", "Are you sure you want to quit without saving a score?", false, null, {
-                    buttons: [
-                    { text: "Quit", styleClass: "btn-destructive", action: () => { quitFromScoreModal(); } },
-                    { text: "Cancel", styleClass: "btn-cancel" }
-                    ], stacked: true
-                });
+                if (!activeQuizNodeForScoring) return;
+                // Close iframe first
+                document.getElementById("fullQuizFrameOverlay").style.display = "none";
+                document.getElementById("quizIframe").srcdoc = "";
+                // Open numpad in "quit mode" — shows all 3 buttons
+                openScoreEntryModal(null, true);
             }
-            
-            function openScoreEntryModal(preFilledScore) {
+
+            // mode: quitMode=true shows 3 buttons, false shows only Save
+            function openScoreEntryModal(preFilledScore, quitMode) {
                 if (!activeQuizNodeForScoring) return;
                 if (preFilledScore) {
                     numpadValue = preFilledScore;
                 } else {
-                    numpadValue = activeQuizNodeForScoring.score !== "-" && activeQuizNodeForScoring.score !== "Pending" ? activeQuizNodeForScoring.score : "";
+                    numpadValue = (activeQuizNodeForScoring.score && activeQuizNodeForScoring.score !== "-" && activeQuizNodeForScoring.score !== "Pending") ? activeQuizNodeForScoring.score : "";
                 }
-                document.getElementById("scoreModalTitle").innerText = `Log Score: ${activeQuizNodeForScoring.name}`;
+                document.getElementById("scoreModalTitle").innerText = `Score: ${activeQuizNodeForScoring.name}`;
                 updateNumpadDisplay();
+                // Show/hide quit mode buttons
+                const quitBtns = document.getElementById("quitModeButtons");
+                const cancelBtn = document.getElementById("scoreModalCancelBtn");
+                if (quitMode) {
+                    quitBtns.style.display = "flex";
+                    cancelBtn.style.display = "none"; // No cancel in quit mode — must choose
+                } else {
+                    quitBtns.style.display = "none";
+                    cancelBtn.style.display = "block";
+                }
                 document.getElementById("scoreEntryModal").classList.add("active");
             }
-            
+
             function closeScoreModal() {
                 document.getElementById("scoreEntryModal").classList.remove("active");
+            }
+
+            // ⏸️ Accidental Exit — marks Incomplete, clears crash guard
+            function markAccidentalExit() {
+                if (!activeQuizNodeForScoring) return;
+                activeQuizNodeForScoring.status = "Incomplete";
+                activeQuizNodeForScoring.score = "-";
+                localStorage.removeItem("kz_crash_guard");
+                saveData();
+                activeQuizNodeForScoring = null;
+                closeScoreModal();
+                if (activeView === "syllabus") renderSyllabusListView(); else renderMindMapCanvas();
+            }
+
+            // 🗑️ Discard
+            function discardAndQuit() {
+                if (!activeQuizNodeForScoring) return;
+                activeQuizNodeForScoring.status = "Discarded";
+                activeQuizNodeForScoring.score = "-";
+                localStorage.removeItem("kz_crash_guard");
+                saveData();
+                activeQuizNodeForScoring = null;
+                closeScoreModal();
+                if (activeView === "syllabus") renderSyllabusListView(); else renderMindMapCanvas();
             }
             
             function updateNumpadDisplay() {
@@ -1003,13 +1087,13 @@
                 if (!activeQuizNodeForScoring) return;
                 let val = numpadValue.trim();
                 if (!val) return;
-                
+
                 let parts = val.split('/');
                 if (parts.length !== 2 || isNaN(parseFloat(parts[0])) || isNaN(parseFloat(parts[1])) || parseFloat(parts[1]) === 0) {
-                    triggerIOSAlert("Invalid Score", "Please enter score in format: 45/50", false, null, { buttons: [{text: "OK", styleClass: "btn-accent"}], stacked: true });
+                    triggerIOSAlert("Invalid Score", "Format: 45/50 (score/total)", false, null, { buttons: [{text: "OK", styleClass: "btn-accent"}], stacked: true });
                     return;
                 }
-                
+
                 let pct = (parseFloat(parts[0]) / parseFloat(parts[1])) * 100;
                 if (!activeQuizNodeForScoring.highestPct || pct >= activeQuizNodeForScoring.highestPct) {
                     activeQuizNodeForScoring.highestPct = pct;
@@ -1018,10 +1102,11 @@
                 if (!activeQuizNodeForScoring.attempts) activeQuizNodeForScoring.attempts = [];
                 activeQuizNodeForScoring.attempts.push(val);
                 if (activeQuizNodeForScoring.attempts.length > 5) activeQuizNodeForScoring.attempts.shift();
-                
+
                 activeQuizNodeForScoring.status = "Attempted";
                 activeQuizNodeForScoring.score = val;
-                
+
+                localStorage.removeItem("kz_crash_guard"); // Proper exit
                 saveData();
                 document.getElementById("fullQuizFrameOverlay").style.display = "none";
                 document.getElementById("quizIframe").srcdoc = "";
@@ -1029,17 +1114,10 @@
                 closeScoreModal();
                 if (activeView === "syllabus") renderSyllabusListView(); else renderMindMapCanvas();
             }
-            
+
+            // Legacy — kept for safety (not used now but harmless)
             function quitFromScoreModal() {
-                if (!activeQuizNodeForScoring) return;
-                activeQuizNodeForScoring.status = "Quitted";
-                activeQuizNodeForScoring.score = "-";
-                saveData();
-                document.getElementById("fullQuizFrameOverlay").style.display = "none";
-                document.getElementById("quizIframe").srcdoc = "";
-                activeQuizNodeForScoring = null;
-                closeScoreModal();
-                if (activeView === "syllabus") renderSyllabusListView(); else renderMindMapCanvas();
+                discardAndQuit();
             }
             
             // ================= MIND MAP =================
@@ -1181,6 +1259,39 @@
             // Initialization Sequence
             applyUserData();
             initLockSystem();
+            // ── CRASH DETECTION ──────────────────────────────────
+            (function checkCrashGuard() {
+                const raw = localStorage.getItem("kz_crash_guard");
+                if (!raw) return;
+                try {
+                    const guard = JSON.parse(raw);
+                    if (!guard || !guard.id) { localStorage.removeItem("kz_crash_guard"); return; }
+                    function findNode(nodes, id) {
+                        for (let n of nodes) {
+                            if (n.id === id) return n;
+                            if (n.children) { let f = findNode(n.children, id); if (f) return f; }
+                        }
+                        return null;
+                    }
+                    const node = findNode(treeData, guard.id);
+                    if (!node) { localStorage.removeItem("kz_crash_guard"); return; }
+                    localStorage.removeItem("kz_crash_guard");
+                    setTimeout(() => {
+                        triggerIOSAlert(
+                            "⚡ Abrupt Exit Detected",
+                            `"${guard.name}" last session properly close nahi hua.\n\nKya karna chahte ho?`,
+                            false, null, {
+                                buttons: [
+                                    { text: "▶️ Reopen Quiz", styleClass: "btn-accent", action: () => { launchRealQuiz(node); }},
+                                    { text: "⏸️ Mark Incomplete", action: () => { node.status = "Incomplete"; node.score = "-"; saveData(); renderSyllabusListView(); }},
+                                    { text: "Ignore", styleClass: "btn-cancel" }
+                                ], stacked: true
+                            }
+                        );
+                    }, 500);
+                } catch(e) { localStorage.removeItem("kz_crash_guard"); }
+            })();
+
             populateExamSelect(); 
             renderSyllabusListView(); 
             setTimeout(centerMindMap, 100); 
