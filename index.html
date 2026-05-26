@@ -888,19 +888,54 @@
                 const reader = new FileReader();
                 reader.onload = (evt) => {
                     let htmlCode = evt.target.result;
-                    const newNode = { id: "node-" + Date.now(), name: quizName, type: "Quiz", status: "Pending", score: "-", attempts: [], highestPct: 0, highestScore: "-", quizHTML: htmlCode };
+
+                    // Duplicate check — same name already exists in target folder?
+                    let targetChildren = [];
                     if (window.tempImportParent) {
-                        if (!window.tempImportParent.children) window.tempImportParent.children = [];
-                        window.tempImportParent.children.push(newNode); window.tempImportParent.isExpanded = true; window.tempImportParent = null; 
+                        targetChildren = window.tempImportParent.children || [];
                     } else {
                         let currentLevel = treeData; let parentNode = null;
                         for (let id of currentPath) { parentNode = currentLevel.find(n => n.id === id); if (parentNode && parentNode.children) currentLevel = parentNode.children; }
-                        if (parentNode) { if (!parentNode.children) parentNode.children = []; parentNode.children.push(newNode); parentNode.isExpanded = true; }
+                        if (parentNode) targetChildren = parentNode.children || [];
                     }
-                    saveData(); if(activeView === "syllabus") renderSyllabusListView(); else renderMindMapCanvas();
+                    const isDuplicate = targetChildren.some(n => n.name.toLowerCase() === quizName.toLowerCase());
+                    if (isDuplicate) {
+                        triggerIOSAlert(
+                            "Duplicate Quiz ⚠️",
+                            `"${quizName}" is already added here.
+
+Do you want to add it again as a copy?`,
+                            false, null, {
+                                buttons: [
+                                    { text: "Add as Copy", styleClass: "btn-accent", action: () => {
+                                        quizName = quizName + " (Copy)";
+                                        insertQuizNode(quizName, htmlCode);
+                                    }},
+                                    { text: "Cancel", styleClass: "btn-cancel", action: () => { window.tempImportParent = null; }}
+                                ], stacked: true
+                            }
+                        );
+                        e.target.value = "";
+                        return;
+                    }
+
+                    insertQuizNode(quizName, htmlCode);
                 };
                 reader.readAsText(file); e.target.value = ""; 
             };
+
+            function insertQuizNode(quizName, htmlCode) {
+                const newNode = { id: "node-" + Date.now(), name: quizName, type: "Quiz", status: "Pending", score: "-", attempts: [], highestPct: 0, highestScore: "-", quizHTML: htmlCode };
+                if (window.tempImportParent) {
+                    if (!window.tempImportParent.children) window.tempImportParent.children = [];
+                    window.tempImportParent.children.push(newNode); window.tempImportParent.isExpanded = true; window.tempImportParent = null;
+                } else {
+                    let currentLevel = treeData; let parentNode = null;
+                    for (let id of currentPath) { parentNode = currentLevel.find(n => n.id === id); if (parentNode && parentNode.children) currentLevel = parentNode.children; }
+                    if (parentNode) { if (!parentNode.children) parentNode.children = []; parentNode.children.push(newNode); parentNode.isExpanded = true; }
+                }
+                saveData(); if(activeView === "syllabus") renderSyllabusListView(); else renderMindMapCanvas();
+            }
             
             // ================= QUIZ FRAME & SCORING =================
             function launchRealQuiz(quizNode) {
