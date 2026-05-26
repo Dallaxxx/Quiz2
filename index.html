@@ -986,7 +986,49 @@
     });
 })();
 <\/script>`;
-                    document.getElementById("quizIframe").srcdoc = antiFreezeScript + quizNode.quizHTML;
+                    // MathJax v3 injection — renders LaTeX like \(\frac{...}{...}\) properly
+                    const mathJaxScript = `
+<script>
+MathJax = {
+    tex: {
+        inlineMath: [['\\\\(', '\\\\)']],
+        displayMath: [['\\\\[', '\\\\]']]
+    },
+    options: {
+        skipHtmlTags: ['script','noscript','style','textarea','pre']
+    }
+};
+<\/script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>
+<script>
+window.addEventListener('load', function(){
+    function tryTypeset(el) {
+        if (window.MathJax && MathJax.typesetPromise) {
+            MathJax.typesetPromise(el ? [el] : []).catch(function(){});
+        }
+    }
+    // Watch #questionText for changes (question navigation)
+    var qEl = document.getElementById('questionText');
+    if (qEl) {
+        var obs = new MutationObserver(function(){ tryTypeset(qEl); });
+        obs.observe(qEl, { childList: true, subtree: true });
+    }
+    // Also watch options area
+    var optsEl = document.querySelector('.options') || document.getElementById('optionsContainer');
+    if (optsEl) {
+        var obs2 = new MutationObserver(function(){ tryTypeset(optsEl); });
+        obs2.observe(optsEl, { childList: true, subtree: true });
+    }
+    // Initial render after MathJax loads
+    var mjScript = document.getElementById('MathJax-script');
+    if (mjScript) {
+        mjScript.addEventListener('load', function(){
+            setTimeout(function(){ tryTypeset(document.body); }, 300);
+        });
+    }
+});
+<\/script>`;
+                    document.getElementById("quizIframe").srcdoc = mathJaxScript + antiFreezeScript + quizNode.quizHTML;
                     document.getElementById("activeQuizTitle").innerText = quizNode.name;
                     document.getElementById("fullQuizFrameOverlay").style.display = "flex";
                 }
