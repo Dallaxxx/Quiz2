@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                <title>Kagazi Engine Pro Max</title>
+                <style>
+                    :root {
+                        --bg-workspace: #f1f5f9; --bg-surface: #ffffff;
+                        --accent-indigo: #4f46e5; --color-success: #10b981;
+                        --color-danger: #ef4444; --color-warning: #f59e0b;
+                        --text-dark: #0f172a; --text-muted: #64748b;
+                        --border-light: #cbd5e1; --radius-standard: 14px;
+                    }
+                    
+                    /* THEMES */
+                    body[data-theme="dark"] { --bg-workspace: #0f172a; --bg-surface: #1e293b; --accent-indigo: #818cf8; --text-dark: #f8fafc; --text-muted: #94a3b8; --border-light: #334155; }
+                    body[data-theme="kagazi"] { --bg-workspace: #fdfbf7; --bg-surface: #f4f0e6; --accent-indigo: #d97706; --text-dark: #431407; --border-light: #e7e5e4; }
+                    body[data-theme="xmind-classic"] { --bg-workspace: #f4f5f9; --bg-surface: #ffffff; --accent-indigo: #e45b4b; --color-success: #539d73; --color-danger: #d94b4b; --text-dark: #2c3e50; --text-muted: #7f8c8d; --border-light: #dcdde1; --x-sub: #3498db; --x-top: #2ecc71; --x-quiz: #f1c40f; }
+                    body[data-theme="xmind-zen"] { --bg-workspace: #faf9f5; --bg-surface: #ffffff; --accent-indigo: #334155; --color-success: #4ade80; --text-dark: #1e293b; --border-light: #e2e8f0; --x-sub: #fcd34d; --x-top: #67e8f9; --x-quiz: #cbd5e1; }
+                    /* NEW MONOCHROME THEME */
+                    body[data-theme="monochrome"] { --bg-workspace: #121212; --bg-surface: #1e1e1e; --accent-indigo: #ffffff; --color-success: #bbbbbb; --color-danger: #777777; --text-dark: #ffffff; --text-muted: #999999; --border-light: #333333; }
+                    
+                    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+                    body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--bg-workspace); color: var(--text-dark); user-select: none; -webkit-user-select: none; transition: background-color 0.3s ease; }
+                    
+                    input, textarea { -webkit-user-select: text !important; user-select: text !important; }
+                    
+                    /* NAVBAR */
+                    .top-navbar { position: absolute; top: 0; left: 0; width: 100%; height: 65px; background: var(--bg-surface); border-bottom: 1px solid var(--border-light); z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+                    .profile-trigger { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 6px; border-radius: 20px; }
+                    .profile-avatar { width: 34px; height: 34px; background: var(--accent-indigo); color: var(--bg-surface); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; background-size: cover; background-position: center; border: 2px solid var(--border-light); }
+                    .profile-name { font-weight: 700; font-size: 15px; }
+                    
+                    .tab-switcher { display: flex; background: var(--bg-workspace); padding: 4px; border-radius: 10px; gap: 4px; }
+                    .tab-btn { padding: 8px 16px; border-radius: 8px; border: none; background: transparent; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+                    .tab-btn.active { background: var(--bg-surface); color: var(--accent-indigo); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+                    
+                    .global-fire-badge { display: none; align-items: center; gap: 8px; background: linear-gradient(135deg, rgba(255,69,0,0.1) 0%, rgba(255,140,0,0.1) 100%); border: 1.5px solid rgba(255,69,0,0.35); padding: 6px 14px; border-radius: 24px; font-weight: 800; font-size: 14px; color: #ff4500; animation: firePulse 1.5s infinite alternate; box-shadow: 0 0 15px rgba(255,69,0,0.15); pointer-events: none; }
+                    .global-fire-badge .fire-emoji { font-size: 18px; filter: drop-shadow(0 0 4px rgba(255,69,0,0.6)); animation: fireEmojiBounce 1s infinite alternate; }
+                    @keyframes fireEmojiBounce { 0% { transform: scale(1) translateY(0); } 100% { transform: scale(1.2) translateY(-2px); } }
+                    
+                    /* DRAWER - CLEANED UP */
+                    .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; display: none; opacity: 0; transition: opacity 0.3s; }
+                    .drawer-overlay.active { display: block; opacity: 1; }
+                    .settings-drawer { position: fixed; top: 0; left: -340px; width: 320px; height: 100%; background: var(--bg-surface); z-index: 1000; transition: left 0.3s; padding: 20px; display: flex; flex-direction: column; box-shadow: 5px 0 25px rgba(0,0,0,0.1); overflow-y:auto; }
+                    .settings-drawer.active { left: 0; }
+                    
+                    .drawer-header { font-size: 22px; font-weight: 800; color: var(--accent-indigo); }
+                    .drawer-close-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
+                    .drawer-close-btn:active { background: var(--bg-workspace); }
+                    
+                    /* PROFILE SECTION UPDATES */
+                    .drawer-profile { text-align: center; padding: 28px 20px; background: linear-gradient(135deg, var(--accent-indigo), var(--text-muted)); color: var(--bg-surface); border-radius: 20px; margin: 16px 0 24px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); position: relative; }
+                    .drawer-profile-avatar { width: 75px; height: 75px; margin: 0 auto 12px; background: var(--bg-surface); color: var(--accent-indigo); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; cursor: pointer; border: 3px solid rgba(255,255,255,0.4); background-size: cover; background-position: center; position: relative; transition: transform 0.2s; }
+                    .drawer-profile-avatar:active { transform: scale(0.95); }
+                    .drawer-profile-avatar::after { content: '📷'; position: absolute; bottom: -4px; right: -4px; font-size: 14px; background: var(--bg-surface); border-radius: 50%; padding: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+                    
+                    .drawer-profile-name-box { display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; padding: 4px; border-radius: 8px; transition: background 0.2s; }
+                    .drawer-profile-name-box:active { background: rgba(255,255,255,0.2); }
+                    .drawer-profile-name { font-weight: 800; font-size: 18px; color: var(--bg-surface);}
+                    .drawer-profile-sub { font-size: 13px; opacity: 0.9; margin-top: 4px; font-weight: 600; color: var(--bg-surface);}
+                    
+                    .drawer-section { margin-bottom: 24px; background: var(--bg-workspace); padding: 16px; border-radius: 16px; border: 1px solid var(--border-light); }
+                    .drawer-section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+                    
+                    .theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+                    .theme-chip { padding: 10px 6px; border-radius: 12px; border: 2px solid var(--border-light); background: var(--bg-surface); color: var(--text-dark); font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
+                    .theme-chip:active { transform: scale(0.96); }
+                    .theme-chip.active-theme { border-color: var(--accent-indigo); background: rgba(79,70,229,0.08); color: var(--accent-indigo); }
+                    .theme-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.1); flex-shrink: 0; }
+                    
+                    .drawer-btn { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border-light); background: var(--bg-surface); color: var(--text-dark); font-weight: 700; font-size: 14px; cursor: pointer; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; transition: all 0.2s; }
+                    .drawer-btn:active { transform: scale(0.98); background: var(--border-light); }
+                    .drawer-btn-danger { background: rgba(239,68,68,0.08); color: var(--color-danger); border-color: rgba(239,68,68,0.3); }
+                    .drawer-btn-danger:active { background: rgba(239,68,68,0.15); }
+                    
+                    /* SYLLABUS */
+                    .app-view { position: absolute; top: 65px; left: 0; width: 100%; height: calc(100% - 65px); display: none; }
+                    .app-view.active { display: block; }
+                    .syllabus-header-bar { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; background: var(--bg-surface); border-bottom: 1px solid var(--border-light); }
+                    .breadcrumbs-container { display: flex; gap: 6px; }
+                    .crumb-step { font-size: 16px; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+                    .crumb-step:not(:last-child)::after { content: "›"; margin-left: 8px; }
+                    .crumb-step:last-child { color: var(--text-dark); font-weight: 800; pointer-events: none; }
+                    .add-main-btn { padding: 12px 20px; border-radius: 10px; background: var(--accent-indigo); color: var(--bg-surface); border: none; font-weight: 700; font-size: 15px; cursor: pointer; }
+                    
+                    .list-wrapper-container { padding: 24px; height: calc(100% - 75px); overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+                    
+                    .syllabus-row-card { background: var(--bg-surface); padding: 20px 24px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.04); cursor: pointer; border: 1px solid var(--border-light); transition: transform 0.1s ease; }
+                    .syllabus-row-card:active { transform: scale(0.98); }
+                    .row-left-section { display: flex; align-items: center; gap: 18px; pointer-events: none; }
+                    .row-icon-box { width: 54px; height: 54px; border-radius: 12px; background: rgba(79, 70, 229, 0.08); color: var(--accent-indigo); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; }
+                    
+                    .row-text-block h4 { font-size: 18px; font-weight: 700; }
+                    .row-text-block p { font-size: 14px; color: var(--text-muted); margin-top: 5px; line-height: 1.4; }
+                    
+                    .fire-text { color: #ff4500; font-weight: 800; text-shadow: 0 0 5px #ff8c00; animation: firePulse 1s infinite alternate; }
+                    
+                    /* MODALS */
+                    .modal-overlay-shield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 99999; display: none; align-items: center; justify-content: center; }
+                    .modal-overlay-shield.active { display: flex; }
+                    
+                    .modal-card-box { background: var(--bg-surface); padding: 30px; border-radius: 20px; width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center; border: 1px solid var(--border-light); }
+                    .modal-card-box h3 { font-size: 18px; margin-bottom: 20px; color: var(--accent-indigo); line-height: 1.4; font-weight: 800; white-space: pre-wrap; }
+                    .modal-styled-input { width: 100%; padding: 16px 18px; border-radius: 10px; border: 1px solid var(--border-light); outline: none; font-size: 18px; margin: 15px 0; background: var(--bg-workspace); color: var(--text-dark); }
+                    .modal-btn { width: 100%; padding: 18px; border-radius: 12px; border: none; font-weight: 700; font-size: 18px; cursor: pointer; margin-bottom: 12px; background: var(--bg-workspace); color: var(--text-dark); transition: transform 0.1s;}
+                    .modal-btn:active { transform: scale(0.97); }
+                    .btn-cancel { background: var(--bg-workspace); color: var(--text-dark); border: 2px solid var(--border-light); }
+                    .btn-accent { background: var(--accent-indigo) !important; color: var(--bg-surface) !important; }
+                    .btn-destructive { background: var(--color-danger) !important; color: white !important; }
+                    
+                    .ios-alert-container { width: 380px; background: var(--bg-surface); border-radius: 18px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 15px 30px rgba(0,0,0,0.2); text-align: center; border: 1px solid var(--border-light); }
+                    .ios-alert-body { padding: 30px 24px; border-bottom: 1px solid var(--border-light); }
+                    .ios-alert-title { font-weight: 800; font-size: 20px; color: var(--accent-indigo); margin-bottom: 12px; line-height: 1.4; word-wrap: break-word; }
+                    .ios-alert-desc { font-size: 15px; color: var(--text-muted); line-height: 1.5; }
+                    
+                    .ios-alert-button-dock { display: flex; width: 100%; background: var(--bg-surface); }
+                    .ios-alert-button-dock.stacked { flex-direction: column; height: auto; }
+                    .ios-alert-button-dock.stacked .ios-alert-btn { width: 100%; padding: 22px 10px; border-right: none; border-top: 1px solid var(--border-light); color: var(--accent-indigo); font-weight: 700; font-size: 18px; cursor: pointer; background: transparent; transition: background 0.1s;}
+                    .ios-alert-button-dock.stacked .ios-alert-btn:active { background: var(--bg-workspace); }
+                    .ios-alert-button-dock.stacked .ios-alert-btn.btn-destructive { color: var(--color-danger); }
+                    .ios-alert-button-dock.stacked .ios-alert-btn.btn-cancel { color: var(--text-dark); font-weight: 600; }
+                    
+                    /* NUMPAD */
+                    .numpad-display { width: 100%; padding: 18px; font-size: 32px; font-weight: 800; text-align: center; background: var(--bg-workspace); border-radius: 12px; margin: 15px 0; letter-spacing: 2px; color: var(--accent-indigo); border: 2px solid var(--border-light); font-variant-numeric: tabular-nums; }
+                    .numpad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 auto; }
+                    .numpad-btn { padding: 18px; font-size: 22px; font-weight: 700; border-radius: 14px; border: none; background: var(--bg-workspace); color: var(--text-dark); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.1s, background 0.2s; display: flex; align-items: center; justify-content: center;}
+                    .numpad-btn:active { transform: scale(0.92); background: var(--border-light); }
+                    .numpad-btn.numpad-special { background: var(--bg-surface); border: 1px solid var(--border-light); color: var(--text-muted); }
+                    
+                    /* MAP ENGINE */
+                    .map-controls-panel { position: absolute; top: 15px; left: 24px; z-index: 50; background: var(--bg-surface); padding: 12px 18px; border-radius: 12px; border: 1px solid var(--border-light); display: flex; gap: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); align-items: center;}
+                    .control-dropdown { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-light); background: var(--bg-workspace); color: var(--text-dark); font-size: 15px; font-weight: 700; outline: none; }
+                    .map-viewport-surface { width: 100%; height: 100%; position: relative; overflow: hidden; touch-action: none; cursor: grab; }
+                    .map-viewport-surface:active { cursor: grabbing; }
+                    .map-canvas-plane { width: 10000px; height: 10000px; position: absolute; transform-origin: 0 0; background-image: radial-gradient(var(--border-light) 1px, transparent 1px); background-size: 30px 30px; }
+                    
+                    .svg-trace-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+                    .map-nodes-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
+                    
+                    .map-node-wrapper { position: absolute; display: flex; align-items: center; transform: translate(-50%, -50%); transition: left 0.3s ease, top 0.3s ease; }
+                    .map-node-card { padding: 20px 35px; border-radius: 16px; box-shadow: 0 6px 12px rgba(0,0,0,0.08); background: var(--bg-surface); border: 2px solid transparent; display: flex; align-items: center; cursor: pointer; transition: all 0.2s;}
+                    .map-node-card:active { transform: scale(0.95); }
+                    .map-node-info-text { display: flex; flex-direction: column; pointer-events: none; max-width: 320px; text-align: center;}
+                    .map-node-title { font-size: 18px; font-weight: 800; white-space: normal; line-height: 1.3; word-wrap: break-word;}
+                    .map-node-sub { font-size: 14px; font-weight: 700; margin-top: 6px; color: var(--color-success); }
+                    
+                    .map-node-attempts { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; justify-content: center; }
+                    .attempt-chip { font-size: 11px; padding: 3px 8px; border-radius: 6px; background: var(--bg-workspace); border: 1px solid var(--border-light); color: var(--text-muted); font-weight: 700; }
+                    .attempt-chip.is-max { background: linear-gradient(135deg, #ff6b00, #cc1100); color: white; border: none; animation: firePulse 1.2s infinite alternate; box-shadow: 0 0 8px rgba(255,80,0,0.5); }
+                    .score-chips-row { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px; align-items: center; }
+                    .score-chips-label { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-right: 2px; }
+                    
+                    body[data-theme="xmind-classic"] .level-exam .map-node-card { background: var(--accent-indigo); color: white; border-radius: 12px;}
+                    body[data-theme="xmind-classic"] .level-subject .map-node-card { background: var(--x-sub); color: white; border-radius: 24px;}
+                    body[data-theme="xmind-classic"] .level-topic .map-node-card { border-color: var(--x-top); color: var(--text-dark); border-width: 3px;}
+                    body[data-theme="xmind-classic"] .level-quiz .map-node-card { border-color: var(--x-quiz); border-width: 3px;}
+                    
+                    body[data-theme="xmind-zen"] .level-exam .map-node-card { background: var(--accent-indigo); color: white; border-radius: 35px;}
+                    body[data-theme="xmind-zen"] .level-subject .map-node-card { background: var(--x-sub); color: var(--text-dark); border-radius: 35px;}
+                    body[data-theme="xmind-zen"] .level-topic .map-node-card { background: var(--x-top); color: var(--text-dark); border-radius: 35px;}
+                    body[data-theme="xmind-zen"] .level-quiz .map-node-card { background: var(--x-quiz); border-radius: 35px;}
+                    
+                    body:not([data-theme*="xmind"]) .level-exam .map-node-card { background: var(--accent-indigo); color: var(--bg-surface); }
+                    body:not([data-theme*="xmind"]) .level-subject .map-node-card { border-color: var(--accent-indigo); background: var(--bg-workspace); border-width: 3px; }
+                    body:not([data-theme*="xmind"]) .level-topic .map-node-card { border: 3px solid var(--border-light); background: var(--bg-surface); }
+                    body:not([data-theme*="xmind"]) .level-quiz .map-node-card { border: 3px dashed var(--border-light); background: var(--bg-surface); }
+                    .level-quiz.status-discarded .map-node-card { opacity: 0.5; }
+                    
+                    .node-expander-btn { width: 28px; height: 28px; border-radius: 50%; background: var(--bg-surface); border: 2px solid var(--border-light); box-shadow: 0 2px 6px rgba(0,0,0,0.15); font-size: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: absolute; z-index: 10; pointer-events: auto; font-weight: bold; color: var(--text-dark);}
+                    .dir-left .node-expander-btn { left: -14px; top: 50%; transform: translateY(-50%); }
+                    .dir-right .node-expander-btn { right: -14px; top: 50%; transform: translateY(-50%); }
+                    
+                    .floating-hud-compass { position: absolute; bottom: 24px; right: 24px; background: var(--bg-surface); border: 1px solid var(--border-light); border-radius: 16px; padding: 12px; z-index: 100; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+                    .hud-circle-btn { width: 50px; height: 50px; border: none; background: var(--bg-workspace); color: var(--text-dark); border-radius: 14px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold;}
+                    
+                    /* QUIZ FRAME */
+                    #fullQuizFrameOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-surface); z-index: 9999; display: none; flex-direction: column; }
+                    #quizFrameHeader { height: 75px; background: var(--bg-workspace); display: flex; justify-content: space-between; align-items: center; padding: 0 16px; border-bottom: 1px solid var(--border-light); gap: 10px; }
+                    #quizFrameHeader h3 { color: var(--accent-indigo); font-size: 16px; font-weight: 800; flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                    .header-action-btn { padding: 10px 16px; border-radius: 10px; border:none; font-weight:700; cursor: pointer; font-size: 14px; transition: transform 0.1s; white-space: nowrap; color: white; }
+                    .header-action-btn:active { transform: scale(0.95); }
+
+                    /* LOCK SCREEN SYSTEM */
+                    #lockScreenOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-surface); z-index: 999999; display: none; flex-direction: column; align-items: center; justify-content: center; }
+                    #lockScreenOverlay.active { display: flex; }
+                    .lock-icon-bounce { font-size: 60px; margin-bottom: 15px; animation: lockBounce 1s ease; }
+                    @keyframes lockBounce { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+                    .pin-dots-container { display: flex; gap: 18px; margin: 30px 0 40px; }
+                    .pin-dot { width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--accent-indigo); transition: background 0.2s; }
+                    .pin-dot.filled { background: var(--accent-indigo); }
+                    .shake-animation { animation: shakeError 0.4s; }
+                    @keyframes shakeError { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
+                </style>
+    </head>
+    <body>
+        <div id="lockScreenOverlay">
+            <div class="lock-icon-bounce">🔐</div>
+            <h2 id="lockScreenTitle" style="color: var(--text-dark); font-weight: 800; font-size: 24px;">Enter Passcode</h2>
+            <div id="lockPinDots" class="pin-dots-container">
+                <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+            </div>
+            <div class="numpad-grid" style="width: 300px;">
+                <button class="numpad-btn" onclick="pressLockKey('1')">1</button><button class="numpad-btn" onclick="pressLockKey('2')">2</button><button class="numpad-btn" onclick="pressLockKey('3')">3</button>
+                <button class="numpad-btn" onclick="pressLockKey('4')">4</button><button class="numpad-btn" onclick="pressLockKey('5')">5</button><button class="numpad-btn" onclick="pressLockKey('6')">6</button>
+                <button class="numpad-btn" onclick="pressLockKey('7')">7</button><button class="numpad-btn" onclick="pressLockKey('8')">8</button><button class="numpad-btn" onclick="pressLockKey('9')">9</button>
+                <button class="numpad-btn numpad-special" onclick="cancelLockSetup()" id="lockCancelBtn" style="visibility:hidden; font-size:16px;">Cancel</button>
+                <button class="numpad-btn" onclick="pressLockKey('0')">0</button>
+                <button class="numpad-btn numpad-special" onclick="pressLockKey('backspace')">⌫</button>
+            </div>
+        </div>
+
+        <div class="top-navbar">
+            <div class="profile-trigger" onclick="toggleSettingsDrawer(true)">
+                <div class="profile-avatar" id="navAvatar">👤</div>
+                <div class="profile-name" id="navProfileName">Engine Master</div>
+            </div>
+            <div class="tab-switcher">
+                <button id="tabBtnSyllabus" class="tab-btn active">🗂️ Syllabus</button>
+                <button id="tabBtnMindMap" class="tab-btn">🧠 Map</button>
+            </div>
+
+        </div>
+        
+        <div id="drawerOverlay" class="drawer-overlay" onclick="toggleSettingsDrawer(false)"></div>
+        <div id="settingsDrawer" class="settings-drawer">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="drawer-header">⚙️ Settings</div>
+                <button class="drawer-close-btn" onclick="toggleSettingsDrawer(false)">✕</button>
+            </div>
+            
+            <div class="drawer-profile">
+                <div class="drawer-profile-avatar" id="drawerAvatar" onclick="document.getElementById('avatarUploadInput').click()">👤</div>
+                <div class="drawer-profile-name-box" onclick="editProfileName()">
+                    <span class="drawer-profile-name" id="drawerProfileName">Engine Master</span>
+                    <span>✏️</span>
+                </div>
+                <div class="drawer-profile-sub">Kagazi Pro Max</div>
+                <input type="file" id="avatarUploadInput" style="display:none;" accept="image/*" onchange="handleAvatarUpload(event)">
+            </div>
+            
+            <div class="drawer-section">
+                <div class="drawer-section-title">🎨 Appearance</div>
+                <div class="theme-grid" id="themeGrid">
+                    <button class="theme-chip" onclick="setTheme('light')"><span class="theme-dot" style="background:#f8fafc; border-color:#cbd5e1;"></span> Light</button>
+                    <button class="theme-chip" onclick="setTheme('dark')"><span class="theme-dot" style="background:#1e293b;"></span> Dark</button>
+                    <button class="theme-chip" onclick="setTheme('monochrome')"><span class="theme-dot" style="background:#121212; border-color:#fff;"></span> Mono</button>
+                    <button class="theme-chip" onclick="setTheme('kagazi')"><span class="theme-dot" style="background:#f4f0e6;"></span> Kagazi</button>
+                    <button class="theme-chip" onclick="setTheme('xmind-classic')"><span class="theme-dot" style="background:#e45b4b;"></span> XMind</button>
+                    <button class="theme-chip" onclick="setTheme('xmind-zen')"><span class="theme-dot" style="background:#334155;"></span> Zen</button>
+                </div>
+            </div>
+
+            <div class="drawer-section">
+                <div class="drawer-section-title">🔒 Security</div>
+                <button class="drawer-btn" onclick="startLockSetup()" id="btnSetLock">🔑 Set App Passcode</button>
+                <button class="drawer-btn" onclick="removeLock()" id="btnRemoveLock" style="display:none;">🔓 Remove Passcode</button>
+            </div>
+            
+            <div class="drawer-section">
+                <div class="drawer-section-title">💾 Data & Backup</div>
+                <button class="drawer-btn" onclick="triggerBackupExport()">📤 Export Backup (.json)</button>
+                <button class="drawer-btn" onclick="triggerBackupImport()">📥 Import / Restore</button>
+            </div>
+            
+            <div class="drawer-section" style="margin-top:auto; margin-bottom:0; background:rgba(239,68,68,0.05); border-color:rgba(239,68,68,0.2);">
+                <div class="drawer-section-title" style="color:var(--color-danger);">⚠️ Danger Zone</div>
+                <button class="drawer-btn drawer-btn-danger" style="margin-bottom:0;" onclick="hardResetData()">🗑️ Erase All Data</button>
+            </div>
+            
+            <input type="file" id="quizImportInput" style="display:none;" accept=".html, .htm">
+            <input type="file" id="jsonImportInput" style="display:none;" accept=".json">
+        </div>
+        
+        <div id="viewSyllabus" class="app-view active">
+            <div class="syllabus-header-bar">
+                <div id="breadcrumbs" class="breadcrumbs-container"><span class="crumb-step" onclick="navigateBreadcrumb(-1)">All Exams</span></div>
+                <button id="addNodeBtn" class="add-main-btn">➕ Add <span id="addLevelLabel">Exam</span></button>
+            </div>
+            <div id="syllabusListWrapper" class="list-wrapper-container"></div>
+        </div>
+        
+        <div id="viewMindMap" class="app-view">
+            <div class="map-controls-panel">
+                <label style="font-size:15px; font-weight:bold;">Exam:</label>
+                <select id="mapExamSelect" class="control-dropdown"></select>
+                <label style="font-size:15px; font-weight:bold; margin-left:15px;">Layout:</label>
+                <select id="mapLayoutSelect" class="control-dropdown">
+                    <option value="radial">Radial</option>
+                    <option value="tree">Tree</option>
+                </select>
+            </div>
+            <div id="mapViewport" class="map-viewport-surface">
+                <div id="mapCanvas" class="map-canvas-plane">
+                    <svg id="svgTraceLayer" class="svg-trace-layer"></svg>
+                    <div id="mapNodesLayer" class="map-nodes-layer"></div>
+                </div>
+            </div>
+            <div class="floating-hud-compass">
+                <button class="hud-circle-btn" onclick="zoomCenter(1.2)">➕</button>
+                <button class="hud-circle-btn" onclick="zoomCenter(0.8)">➖</button>
+                <button class="hud-circle-btn" onclick="centerMindMap()">🎯</button>
+            </div>
+        </div>
+        
+        <div id="mutationModal" class="modal-overlay-shield">
+            <div class="modal-card-box">
+                <h3 id="modalBoxTitle">Title</h3>
+                <input type="text" id="modalTextInput" class="modal-styled-input" autocomplete="off">
+                <div id="mutationErrorMsg" style="display:none; color:var(--color-danger); font-size:13px; font-weight:700; margin:-8px 0 8px; padding:10px 14px; background:rgba(239,68,68,0.08); border-radius:8px; border-left:3px solid var(--color-danger);">⚠️ This name already exists here.</div>
+                <button class="modal-btn btn-accent" id="modalBtnSave">Save</button>
+                <button class="modal-btn btn-cancel" onclick="closeMutationModal()">Cancel</button>
+            </div>
+        </div>
+        
+        <div id="iosSystemAlertModal" class="modal-overlay-shield">
+            <div class="ios-alert-container">
+                <div class="ios-alert-body">
+                    <h3 id="iosAlertTitle">Alert Title</h3>
+                    <p id="iosAlertDesc">Alert Description text goes here.</p>
+                    <textarea id="iosAlertTextField" style="display:none; width:100%; height:180px; margin-top:15px; font-size:13px; padding:12px; border-radius:8px; border:1px solid var(--border-light);" autocomplete="off"></textarea>
+                    <button id="copyTextBtn" style="display:none; margin-top:12px; width:100%; padding:14px; border-radius:8px; border:none; background:var(--color-success); color:white; font-size:16px; font-weight:bold; cursor:pointer;" onclick="copyBackupText()">📋 Copy to Clipboard</button>
+                </div>
+                <div id="iosAlertButtonDock" class="ios-alert-button-dock"></div>
+            </div>
+        </div>
+        
+        <div id="scoreEntryModal" class="modal-overlay-shield">
+            <div class="modal-card-box" style="max-width: 360px; width: 90%;">
+                <h3 id="scoreModalTitle">Log Score</h3>
+                <div id="numpadDisplay" class="numpad-display">-- / --</div>
+                <div class="numpad-grid">
+                    <button class="numpad-btn" onclick="pressNumpad('1')">1</button><button class="numpad-btn" onclick="pressNumpad('2')">2</button><button class="numpad-btn" onclick="pressNumpad('3')">3</button>
+                    <button class="numpad-btn" onclick="pressNumpad('4')">4</button><button class="numpad-btn" onclick="pressNumpad('5')">5</button><button class="numpad-btn" onclick="pressNumpad('6')">6</button>
+                    <button class="numpad-btn" onclick="pressNumpad('7')">7</button><button class="numpad-btn" onclick="pressNumpad('8')">8</button><button class="numpad-btn" onclick="pressNumpad('9')">9</button>
+                    <button class="numpad-btn numpad-special" onclick="pressNumpad('/')">/</button><button class="numpad-btn" onclick="pressNumpad('0')">0</button><button class="numpad-btn numpad-special" onclick="pressNumpad('backspace')">⌫</button>
+                </div>
+                <div id="scoreModalButtons" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    <button class="modal-btn btn-accent" onclick="saveNumpadScore()">💾 Save & Quit</button>
+                    <div id="quitModeButtons" style="display:none; flex-direction:column; gap:10px;">
+                        <button class="modal-btn" style="background:#f59e0b;color:white;" onclick="markAccidentalExit()">⏸️ Accidental Exit (Incomplete)</button>
+                        <button class="modal-btn btn-destructive" onclick="discardAndQuit()">🗑️ Discard Quiz</button>
+                    </div>
+                    <button class="modal-btn btn-cancel" id="scoreModalCancelBtn" onclick="closeScoreModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="fullQuizFrameOverlay">
+            <div id="quizFrameHeader">
+                <button class="header-action-btn btn-destructive" onclick="confirmQuizQuit()">Quit</button>
+                <h3 id="activeQuizTitle">Quiz Running...</h3>
+
+            </div>
+            <iframe id="quizIframe" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals" style="width:100%; height:calc(100% - 75px); border:none; background:white; overflow:auto; -webkit-overflow-scrolling:touch;"></iframe>
+        </div>
+        
+        <script>
+            // ================= CONFIG & THEMES =================
+            function setTheme(themeName) { 
+                document.body.setAttribute('data-theme', themeName); 
+                localStorage.setItem('kagazi_theme', themeName); 
+                highlightActiveTheme(); 
+            }
+            document.body.setAttribute('data-theme', localStorage.getItem('kagazi_theme') || 'light');
+            
+            function highlightActiveTheme() {
+                const current = localStorage.getItem('kagazi_theme') || 'light';
+                document.querySelectorAll('.theme-chip').forEach(btn => {
+                    const t = btn.getAttribute('onclick').match(/'(.*?)'/)[1];
+                    if (t === current) btn.classList.add('active-theme');
+                    else btn.classList.remove('active-theme');
+                });
+            }
+            highlightActiveTheme();
+
+            // ================= PROFILE (NAME & PHOTO) =================
+            function applyUserData() {
+                const savedName = localStorage.getItem('kagazi_username') || 'Engine Master';
+                document.getElementById('navProfileName').innerText = savedName;
+                document.getElementById('drawerProfileName').innerText = savedName;
+
+                const savedAvatar = localStorage.getItem('kagazi_avatar');
+                if (savedAvatar) {
+                    document.getElementById('navAvatar').innerHTML = '';
+                    document.getElementById('navAvatar').style.backgroundImage = `url(${savedAvatar})`;
+                    document.getElementById('drawerAvatar').innerHTML = '';
+                    document.getElementById('drawerAvatar').style.backgroundImage = `url(${savedAvatar})`;
+                }
+            }
+
+            function editProfileName() {
+                const currentName = localStorage.getItem('kagazi_username') || 'Engine Master';
+                openMutationModal("Edit Profile Name", currentName, (newName) => {
+                    if(newName.trim().length > 0) {
+                        localStorage.setItem('kagazi_username', newName.trim());
+                        applyUserData();
+                    }
+                });
+            }
+
+            function handleAvatarUpload(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const img = new Image();
+                    img.onload = function() {
+                        // Canvas compression logic so we don't crash localStorage
+                        const canvas = document.createElement('canvas');
+                        const MAX_SIZE = 250;
+                        let width = img.width, height = img.height;
+                        if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } } 
+                        else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+                        canvas.width = width; canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                        
+                        try {
+                            localStorage.setItem('kagazi_avatar', dataUrl);
+                            applyUserData();
+                        } catch (err) {
+                            triggerIOSAlert("Error", "Image is too large. Try a smaller image.", false, null, {buttons: [{text:"OK", styleClass:"btn-accent"}]});
+                        }
+                    };
+                    img.src = evt.target.result;
+                };
+                reader.readAsDataURL(file);
+                e.target.value = '';
+            }
+
+            // ================= PASSCODE LOCK SYSTEM =================
+            let currentPinInput = '';
+            let targetLockPin = localStorage.getItem('kagazi_passcode');
+            let lockMode = 'verify'; // 'verify', 'setup_1', 'setup_2'
+            let setupTempPin = '';
+
+            function updateLockUI() {
+                if(localStorage.getItem('kagazi_passcode')) {
+                    document.getElementById('btnSetLock').style.display = 'none';
+                    document.getElementById('btnRemoveLock').style.display = 'flex';
+                } else {
+                    document.getElementById('btnSetLock').style.display = 'flex';
+                    document.getElementById('btnRemoveLock').style.display = 'none';
+                }
+            }
+
+            function initLockSystem() {
+                updateLockUI();
+                if (targetLockPin) {
+                    lockMode = 'verify';
+                    document.getElementById('lockScreenOverlay').classList.add('active');
+                    document.getElementById('lockCancelBtn').style.visibility = 'hidden';
+                    document.getElementById('lockScreenTitle').innerText = 'Enter Passcode';
+                    resetLockDots();
+                }
+            }
+
+            function startLockSetup() {
+                toggleSettingsDrawer(false);
+                lockMode = 'setup_1';
+                setupTempPin = '';
+                currentPinInput = '';
+                document.getElementById('lockScreenOverlay').classList.add('active');
+                document.getElementById('lockCancelBtn').style.visibility = 'visible';
+                document.getElementById('lockScreenTitle').innerText = 'Create New Passcode';
+                resetLockDots();
+            }
+
+            function cancelLockSetup() {
+                document.getElementById('lockScreenOverlay').classList.remove('active');
+                lockMode = 'verify';
+                currentPinInput = '';
+            }
+
+            function removeLock() {
+                triggerIOSAlert("Remove Passcode", "Are you sure you want to remove the app lock?", false, null, {
+                    buttons: [
+                        {text: "Remove", styleClass: "btn-destructive", action: () => {
+                            localStorage.removeItem('kagazi_passcode');
+                            targetLockPin = null;
+                            updateLockUI();
+                            toggleSettingsDrawer(false);
+                            triggerIOSAlert("Success", "Passcode has been removed.", false, null, {buttons: [{text: "OK", styleClass: "btn-accent"}]});
+                        }},
+                        {text: "Cancel", styleClass: "btn-cancel"}
+                    ], stacked: true
+                });
+            }
+
+            function resetLockDots() {
+                const dots = document.querySelectorAll('#lockPinDots .pin-dot');
+                dots.forEach((dot, index) => {
+                    if (index < currentPinInput.length) dot.classList.add('filled');
+                    else dot.classList.remove('filled');
+                });
+            }
+
+            function shakeLockError() {
+                const dotsContainer = document.getElementById('lockPinDots');
+                dotsContainer.classList.add('shake-animation');
+                setTimeout(() => {
+                    dotsContainer.classList.remove('shake-animation');
+                    currentPinInput = '';
+                    resetLockDots();
+                }, 400);
+            }
+
+            function pressLockKey(key) {
+                if (key === 'backspace') {
+                    currentPinInput = currentPinInput.slice(0, -1);
+                } else if (currentPinInput.length < 4) {
+                    currentPinInput += key;
+                }
+                resetLockDots();
+
+                if (currentPinInput.length === 4) {
+                    setTimeout(processLockSubmission, 150);
+                }
+            }
+
+            function processLockSubmission() {
+                if (lockMode === 'verify') {
+                    if (currentPinInput === targetLockPin) {
+                        document.getElementById('lockScreenOverlay').classList.remove('active');
+                        currentPinInput = '';
+                        resetLockDots();
+                    } else {
+                        shakeLockError();
+                    }
+                } else if (lockMode === 'setup_1') {
+                    setupTempPin = currentPinInput;
+                    currentPinInput = '';
+                    lockMode = 'setup_2';
+                    document.getElementById('lockScreenTitle').innerText = 'Confirm Passcode';
+                    resetLockDots();
+                } else if (lockMode === 'setup_2') {
+                    if (currentPinInput === setupTempPin) {
+                        localStorage.setItem('kagazi_passcode', currentPinInput);
+                        targetLockPin = currentPinInput;
+                        document.getElementById('lockScreenOverlay').classList.remove('active');
+                        updateLockUI();
+                        triggerIOSAlert("Success", "App passcode has been set!", false, null, {buttons: [{text: "OK", styleClass: "btn-accent"}]});
+                    } else {
+                        shakeLockError();
+                        document.getElementById('lockScreenTitle').innerText = 'Pins do not match. Try again:';
+                        lockMode = 'setup_1';
+                        setupTempPin = '';
+                    }
+                }
+            }
+            
+            // ================= DATA RECOVERY =================
+            function loadRecoveredData() {
+                const keys = ['kagazi_final_db', 'kagazi_pro_v5', 'kagazi_pro_v4', 'kagazi_pro_v3', 'kagazi_data'];
+                for(let key of keys) {
+                    let data = localStorage.getItem(key);
+                    if(data) { try { let p = JSON.parse(data); if (Array.isArray(p) && p.length > 0) return p; } catch(e) {} }
+                }
+                return [];
+            }
+            let treeData = loadRecoveredData();
+            function saveData() { localStorage.setItem('kagazi_final_db', JSON.stringify(treeData)); populateExamSelect(); }
+            
+            function hardResetData() {
+                triggerIOSAlert("Hard Reset", "DANGER: This will permanently delete ALL your exams and data. This cannot be undone.", false, null, {
+                    buttons: [
+                    { text: "Delete Everything", styleClass: "btn-destructive", action: () => { localStorage.clear(); treeData = []; saveData(); location.reload(); } },
+                    { text: "Cancel", styleClass: "btn-cancel" }
+                    ], stacked: true
+                });
+            }
+            
+            let currentPath = []; let activeView = "syllabus"; 
+            let scale = 1.0; let panOffset = { x: 0, y: 0 }; let isDragging = false, startX, startY; 
+            let currentLayout = "radial"; let activeQuizNodeForScoring = null;
+            let selectedMapExamId = localStorage.getItem('kagazi_last_exam') || null;
+            let mutationCallback = null;
+            let numpadValue = "";
+            
+            const viewSyllabus = document.getElementById("viewSyllabus"); const viewMindMap = document.getElementById("viewMindMap"); 
+            const syllabusListWrapper = document.getElementById("syllabusListWrapper"); const breadcrumbs = document.getElementById("breadcrumbs"); 
+            const addNodeBtn = document.getElementById("addNodeBtn"); const addLevelLabel = document.getElementById("addLevelLabel"); 
+            const mapViewport = document.getElementById("mapViewport"); const mapCanvas = document.getElementById("mapCanvas"); 
+            const mapNodesLayer = document.getElementById("mapNodesLayer"); const svgTraceLayer = document.getElementById("svgTraceLayer");
+            const mapExamSelect = document.getElementById("mapExamSelect");
+            
+            function toggleSettingsDrawer(open) { 
+                document.getElementById("settingsDrawer").classList.toggle("active", open); 
+                document.getElementById("drawerOverlay").classList.toggle("active", open); 
+                if(open) highlightActiveTheme();
+            }
+            
+            let mutationDuplicateCheckList = null; // set when creating, null when renaming
+
+            function openMutationModal(title, initialVal, callback, duplicateCheckIn) {
+                document.getElementById("modalBoxTitle").innerText = title;
+                let input = document.getElementById("modalTextInput");
+                input.value = initialVal || "";
+                mutationCallback = callback;
+                mutationDuplicateCheckList = duplicateCheckIn || null;
+                // Hide error on open
+                let errEl = document.getElementById("mutationErrorMsg");
+                if (errEl) { errEl.style.display = "none"; }
+                document.getElementById("mutationModal").classList.add("active");
+                setTimeout(() => input.focus(), 100);
+            }
+
+            function closeMutationModal() {
+                document.getElementById("mutationModal").classList.remove("active");
+                let errEl = document.getElementById("mutationErrorMsg");
+                if (errEl) errEl.style.display = "none";
+            }
+
+            document.getElementById("modalBtnSave").onclick = () => {
+                let val = document.getElementById("modalTextInput").value.trim();
+                if (!val) return;
+                let errEl = document.getElementById("mutationErrorMsg");
+
+                // Duplicate check — only when creating (mutationDuplicateCheckList is set)
+                if (mutationDuplicateCheckList) {
+                    let nameLower = val.toLowerCase();
+                    let isDuplicate = mutationDuplicateCheckList.some(n => n.name.toLowerCase() === nameLower);
+                    if (isDuplicate) {
+                        if (errEl) {
+                            errEl.innerText = '⚠️ "' + val + '" already exists here. Choose a different name.';;
+                            errEl.style.display = "block";
+                        }
+                        document.getElementById("modalTextInput").style.borderColor = "var(--color-danger)";
+                        setTimeout(() => { document.getElementById("modalTextInput").style.borderColor = ""; }, 2000);
+                        return; // Don't close modal
+                    }
+                }
+
+                if (errEl) errEl.style.display = "none";
+                if (mutationCallback) {
+                    mutationCallback(val);
+                    closeMutationModal();
+                }
+            };
+
+            // Also allow Enter key to save
+            document.getElementById("modalTextInput").addEventListener("keydown", (e) => {
+                if (e.key === "Enter") document.getElementById("modalBtnSave").click();
+            });
+            
+            // Global fire badge removed — scores shown per-quiz individually
+            
+            // ================= ALERT & EXPORT ENGINE =================
+            function triggerIOSAlert(title, desc, isTextarea, initialVal, config) {
+                document.getElementById("iosAlertTitle").innerText = title;
+                document.getElementById("iosAlertDesc").innerText = desc;
+                const textField = document.getElementById("iosAlertTextField");
+                const copyBtn = document.getElementById("copyTextBtn");
+                
+                if(isTextarea) { 
+                    textField.style.display = "block"; textField.value = initialVal || ""; 
+                    if(initialVal) { copyBtn.style.display = "block"; copyBtn.innerText = "📋 Copy to Clipboard"; } else { copyBtn.style.display = "none"; }
+                } else { 
+                    textField.style.display = "none"; copyBtn.style.display = "none";
+                }
+                
+                const buttonDock = document.getElementById("iosAlertButtonDock"); buttonDock.innerHTML = "";
+                if(config.stacked) buttonDock.classList.add("stacked"); else buttonDock.classList.remove("stacked");
+                
+                config.buttons.forEach(btn => {
+                    const b = document.createElement("button"); b.className = `ios-alert-btn ${btn.styleClass || ""}`; b.innerText = btn.text;
+                    b.onclick = () => { if(btn.autoClose !== false) document.getElementById("iosSystemAlertModal").classList.remove("active"); if(btn.action) btn.action(isTextarea ? textField.value : null); };
+                    buttonDock.appendChild(b);
+                });
+                document.getElementById("iosSystemAlertModal").classList.add("active");
+            }
+            
+            function copyBackupText() {
+                let txt = document.getElementById("iosAlertTextField");
+                txt.select(); document.execCommand("copy");
+                document.getElementById("copyTextBtn").innerText = "✅ Copied Successfully!";
+            }
+            
+            function triggerBackupExport() {
+                let dataStr = JSON.stringify(treeData, null, 2);
+                const blob = new Blob([dataStr], {type: "application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                const d = new Date();
+                const stamp = d.toISOString().slice(0,10) + "_" + String(d.getHours()).padStart(2,'0') + String(d.getMinutes()).padStart(2,'0');
+                a.download = "Kagazi_Backup_" + stamp + ".json";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                
+                triggerIOSAlert("Backup Saved", "Your data has been downloaded as a .json file. You can also copy the text below:", true, dataStr, { 
+                    buttons: [ { text: "Close", styleClass: "btn-cancel" } ], stacked: true 
+                });
+            }
+            
+            function triggerBackupImport() {
+                document.getElementById("jsonImportInput").click();
+            }
+            
+            document.getElementById("jsonImportInput").onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    try {
+                        let p = JSON.parse(evt.target.result);
+                        if (Array.isArray(p)) {
+                            treeData = p;
+                            saveData();
+                            populateExamSelect();
+                            toggleSettingsDrawer(false);
+                            if (activeView === "syllabus") renderSyllabusListView();
+                            else { renderMindMapCanvas(); centerMindMap(); }
+                            triggerIOSAlert("Restore Successful ✅", "Aapka data restore ho gaya!", false, null, {
+                                buttons: [{ text: "OK", styleClass: "btn-accent" }], stacked: true
+                            });
+                        } else {
+                            alert("Invalid format — Array expected.");
+                        }
+                    } catch(err) {
+                        alert("Invalid JSON file.");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = "";
+            };
+            
+            // ================= GESTURES (100% HOLD FIX) =================
+            let globalNavLock = false; 
+            function attachGestures(element, node, isMap = false) {
+                let holdTimer; let lastTap = 0; let touchStartX = 0; let touchStartY = 0; let touchMoved = false; let menuOpened = false;
+                const HOLD_DELAY = 600;
+                const MOVE_THRESHOLD = 12;
+                
+                const executeDoubleTap = () => { 
+                    if(globalNavLock) return; globalNavLock = true; setTimeout(()=> globalNavLock = false, 500); 
+                    if(node.type === "Quiz") launchRealQuiz(node); 
+                    else if(isMap) { node.isExpanded = !node.isExpanded; renderMindMapCanvas(); } 
+                    else { currentPath.push(node.id); renderSyllabusListView(); } 
+                };
+                
+                const triggerActionMenu = () => {
+                    menuOpened = true;
+                    let buttons = [
+                    { text: "✏️ Rename", action: () => { openMutationModal(`Rename '${node.name}'`, node.name, (val) => { node.name = val; saveData(); isMap ? renderMindMapCanvas() : renderSyllabusListView(); }); } },
+                    { text: "❌ Delete", styleClass: "btn-destructive", action: () => { 
+                        triggerIOSAlert("Confirm Delete", `Are you sure you want to permanently delete '${node.name}'?`, false, null, { buttons: [ {text: "Delete", styleClass: "btn-destructive", action: ()=>{ deleteNodeFromDatabase(treeData, node.id); saveData(); isMap ? renderMindMapCanvas() : renderSyllabusListView(); }}, {text: "Cancel", styleClass: "btn-cancel"} ], stacked: true});
+                    }}
+                    ];
+                    if(node.type !== "Quiz") {
+                        buttons.unshift({ text: "➕ Add Sub-Item", action: () => { 
+                            let nextType = node.type === "Exam" ? "Subject" : node.type === "Subject" ? "Topic" : "Quiz";
+                            if(nextType === "Quiz") { window.tempImportParent = node; document.getElementById("quizImportInput").click(); }
+                            else { openMutationModal(`Add New ${nextType}`, "", (val) => { if(!node.children) node.children = []; node.children.push({id: "node-"+Date.now(), name: val, type: nextType, isExpanded: true, children:[]}); node.isExpanded = true; saveData(); isMap ? renderMindMapCanvas() : renderSyllabusListView(); }, node.children || []); }
+                        }});
+                    }
+                    buttons.push({ text: "Cancel", styleClass: "btn-cancel" });
+                    triggerIOSAlert(`Manage '${node.name}'`, "Select an action below:", false, null, { buttons: buttons, stacked: true });
+                };
+                
+                element.style.touchAction = 'none';
+                element.addEventListener('contextmenu', e => { e.preventDefault(); triggerActionMenu(); });
+                
+                element.addEventListener('touchstart', (e) => {
+                    if (e.touches.length > 1) return;
+                    menuOpened = false;
+                    touchMoved = false;
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    holdTimer = setTimeout(() => {
+                        if (!touchMoved) triggerActionMenu();
+                    }, HOLD_DELAY);
+                }, {passive: true});
+                
+                element.addEventListener('touchmove', (e) => {
+                    if (e.touches.length > 1 || menuOpened) { touchMoved = true; clearTimeout(holdTimer); return; }
+                    const dx = Math.abs(e.touches[0].clientX - touchStartX);
+                    const dy = Math.abs(e.touches[0].clientY - touchStartY);
+                    if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
+                        touchMoved = true;
+                        clearTimeout(holdTimer);
+                    }
+                }, {passive: true});
+                
+                element.addEventListener('touchend', (e) => {
+                    clearTimeout(holdTimer);
+                    if (!touchMoved && !menuOpened) {
+                        let now = Date.now();
+                        if (now - lastTap < 300) {
+                            executeDoubleTap();
+                            lastTap = 0;
+                        } else {
+                            lastTap = now;
+                        }
+                    }
+                });
+                
+                element.addEventListener('mousedown', (e) => {
+                    if (e.button !== 0) return;
+                    menuOpened = false;
+                    holdTimer = setTimeout(triggerActionMenu, HOLD_DELAY);
+                });
+                element.addEventListener('mouseup', () => clearTimeout(holdTimer));
+                element.addEventListener('mouseleave', () => clearTimeout(holdTimer));
+                element.addEventListener('dblclick', (e) => { e.preventDefault(); executeDoubleTap(); });
+            }
+            
+            function getCurrentLevelNodes() {
+                if (currentPath.length === 0) return treeData; let currentLevel = treeData;
+                for (let id of currentPath) { let found = currentLevel.find(n => n.id === id); if (found && found.children) currentLevel = found.children; else return []; }
+                return currentLevel;
+            }
+            function getNextExpectedLevelType() { if (currentPath.length === 0) return "Exam"; if (currentPath.length === 1) return "Subject"; if (currentPath.length === 2) return "Topic"; return "Quiz"; }
+            
+            // ================= SYLLABUS LIST =================
+            function renderSyllabusListView() {
+                syllabusListWrapper.innerHTML = ""; renderBreadcrumbs(); const nodes = getCurrentLevelNodes(); const nextType = getNextExpectedLevelType();
+                addLevelLabel.innerText = nextType; addNodeBtn.style.display = currentPath.length >= 4 ? "none" : "block";
+                
+                if (nodes.length === 0) { syllabusListWrapper.innerHTML = `<div class="syllabus-row-card" style="justify-content:center; color:gray; font-size:15px; pointer-events:none;">Folder is empty. Click 'Add New' below.</div>`; return; }
+                
+                nodes.forEach(node => {
+                    const isQuiz = node.type === "Quiz"; let status = node.status || "Pending";
+                    let subText = "";
+                    let scoreChipsHTML = "";
+                    if (isQuiz) {
+                        if (status === "Incomplete") subText = "⏸️ Incomplete";
+                        else if (status === "Discarded") subText = "🗑️ Discarded";
+                        else if (status === "Attempted") {
+                            subText = `✅ ${(node.attempts||[]).length} attempt${(node.attempts||[]).length>1?'s':''}`;
+                            // Build chips: last 5, highlight max
+                            const atts = node.attempts || [];
+                            const maxPct = node.highestPct || 0;
+                            let chips = atts.map(a => {
+                                const pts = a.split('/');
+                                const pct = pts.length===2 ? (parseFloat(pts[0])/parseFloat(pts[1]))*100 : 0;
+                                const isMax = node.highestScore === a;
+                                return `<span class="attempt-chip${isMax?' is-max':''}">${isMax?'🔥 ':''}${a}${pct>0?' ('+pct.toFixed(0)+'%)':''}</span>`;
+                            }).join('');
+                            scoreChipsHTML = `<div class="score-chips-row"><span class="score-chips-label">Scores:</span>${chips}</div>`;
+                        } else subText = "⏳ Pending — double-tap to start";
+                    } else { subText = 'Double-tap to open ➔ ' + (node.children ? node.children.length : 0) + ' items'; }
+                    
+                    const card = document.createElement("div"); 
+                    card.className = `syllabus-row-card type-${node.type.toLowerCase()} ${isQuiz ? 'status-'+status.toLowerCase() : ''}`;
+                    card.innerHTML = `<div class="row-left-section"><div class="row-icon-box">${node.type[0]}</div><div class="row-text-block"><h4>${node.name}</h4><p>${subText}</p>${scoreChipsHTML}</div></div>`;
+                    attachGestures(card, node, false); syllabusListWrapper.appendChild(card);
+                });
+            }
+            
+            function navigateBreadcrumb(index) { currentPath = index === -1 ? [] : currentPath.slice(0, index + 1); renderSyllabusListView(); }
+            function renderBreadcrumbs() {
+                breadcrumbs.innerHTML = `<span class="crumb-step" onclick="navigateBreadcrumb(-1)">All Exams</span>`; let activeTrace = [];
+                currentPath.forEach((id, idx) => {
+                    activeTrace.push(id); let currentLevel = treeData; let foundNode = null;
+                    for (let targetId of activeTrace) { foundNode = currentLevel.find(n => n.id === targetId); if (foundNode && foundNode.children) currentLevel = foundNode.children; }
+                    if (foundNode) breadcrumbs.innerHTML += `<span class="crumb-step" onclick="navigateBreadcrumb(${idx})">${foundNode.name}</span>`;
+                });
+            }
+            
+            // ================= CREATION =================
+            addNodeBtn.onclick = () => {
+                const nextType = getNextExpectedLevelType();
+                if (nextType === "Quiz") { window.tempImportParent = null; document.getElementById("quizImportInput").click(); } 
+                else {
+                    const siblingsForCheck = getCurrentLevelNodes();
+                    openMutationModal(`Create New ${nextType}`, "", (val) => {
+                        const newNode = { id: "node-" + Date.now(), name: val, type: nextType, isExpanded: true, children: [] };
+                        if (currentPath.length === 0) treeData.push(newNode); else {
+                            let currentLevel = treeData; let parentNode = null;
+                            for (let id of currentPath) { parentNode = currentLevel.find(n => n.id === id); if (parentNode && parentNode.children) currentLevel = parentNode.children; }
+                            if (parentNode) { parentNode.children.push(newNode); parentNode.isExpanded = true; }
+                        }
+                        saveData(); renderSyllabusListView();
+                    }, siblingsForCheck);
+                }
+            };
+            
+            document.getElementById("quizImportInput").onchange = (e) => {
+                const file = e.target.files[0]; 
+                if (!file) { window.tempImportParent = null; e.target.value = ""; return; }
+                let quizName = file.name.replace(/\.html$|\.htm$/i, ""); 
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    let htmlCode = evt.target.result;
+
+                    // Duplicate check — same name already exists in target folder?
+                    let targetChildren = [];
+                    if (window.tempImportParent) {
+                        targetChildren = window.tempImportParent.children || [];
+                    } else {
+                        let currentLevel = treeData; let parentNode = null;
+                        for (let id of currentPath) { parentNode = currentLevel.find(n => n.id === id); if (parentNode && parentNode.children) currentLevel = parentNode.children; }
+                        if (parentNode) targetChildren = parentNode.children || [];
+                    }
+                    const isDuplicate = targetChildren.some(n => n.name.toLowerCase() === quizName.toLowerCase());
+                    if (isDuplicate) {
+                        triggerIOSAlert(
+                            "Duplicate Quiz ⚠️",
+                            `"${quizName}" is already added here.
+
+Do you want to add it again as a copy?`,
+                            false, null, {
+                                buttons: [
+                                    { text: "Add as Copy", styleClass: "btn-accent", action: () => {
+                                        quizName = quizName + " (Copy)";
+                                        insertQuizNode(quizName, htmlCode);
+                                    }},
+                                    { text: "Cancel", styleClass: "btn-cancel", action: () => { window.tempImportParent = null; }}
+                                ], stacked: true
+                            }
+                        );
+                        e.target.value = "";
+                        return;
+                    }
+
+                    insertQuizNode(quizName, htmlCode);
+                };
+                reader.readAsText(file); e.target.value = ""; 
+            };
+
+            function insertQuizNode(quizName, htmlCode) {
+                const newNode = { id: "node-" + Date.now(), name: quizName, type: "Quiz", status: "Pending", score: "-", attempts: [], highestPct: 0, highestScore: "-", quizHTML: htmlCode };
+                if (window.tempImportParent) {
+                    if (!window.tempImportParent.children) window.tempImportParent.children = [];
+                    window.tempImportParent.children.push(newNode); window.tempImportParent.isExpanded = true; window.tempImportParent = null;
+                } else {
+                    let currentLevel = treeData; let parentNode = null;
+                    for (let id of currentPath) { parentNode = currentLevel.find(n => n.id === id); if (parentNode && parentNode.children) currentLevel = parentNode.children; }
+                    if (parentNode) { if (!parentNode.children) parentNode.children = []; parentNode.children.push(newNode); parentNode.isExpanded = true; }
+                }
+                saveData(); if(activeView === "syllabus") renderSyllabusListView(); else renderMindMapCanvas();
+            }
+            
+            // ================= QUIZ FRAME & SCORING =================
+            function launchRealQuiz(quizNode) {
+                activeQuizNodeForScoring = quizNode;
+                // Crash guard — set before launch, cleared on proper exit
+                localStorage.setItem("kz_crash_guard", JSON.stringify({ id: quizNode.id, name: quizNode.name, time: Date.now() }));
+                if(quizNode.quizHTML) {
+                    const antiFreezeScript = `<script>
+(function(){
+    window.alert  = function(msg){ console.log('[quiz]', msg); };
+    window.prompt = function(){ return null; };
+    window.print  = function(){};
+    window.onbeforeunload = null;
+
+    var _ael = window.addEventListener;
+    window.addEventListener = function(type, fn, cap){
+        if(type === 'beforeunload' || type === 'unload') return;
+        return _ael.call(this, type, fn, cap);
+    };
+
+    function showKagaziConfirm(message, onYes) {
+        var lines = message.split('\n').filter(function(l){ return l.trim(); });
+        var title = lines[0] || 'Submit Quiz?';
+        var sub   = lines.slice(1).join(' ').trim();
+
+        var ov = document.createElement('div');
+        ov.id  = '__kz_ov';
+        ov.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:2147483647;display:flex;align-items:center;justify-content:center;font-family:-apple-system,sans-serif;';
+
+        ov.innerHTML =
+            '<div style="background:#fff;border-radius:20px;padding:28px 22px;max-width:300px;width:88%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.4);">' +
+            '<div style="font-size:19px;font-weight:800;color:#4f46e5;margin-bottom:10px;">' + title + '</div>' +
+            (sub ? '<div style="font-size:13px;color:#f59e0b;font-weight:700;margin-bottom:18px;">&#9888;&#65039; ' + sub + '</div>' : '<div style="margin-bottom:12px;"></div>') +
+            '<div style="display:flex;gap:10px;">' +
+            '<button id="__kz_no"  style="flex:1;padding:14px;border-radius:12px;border:2px solid #cbd5e1;background:#fff;font-size:15px;font-weight:700;cursor:pointer;color:#0f172a;">Cancel</button>' +
+            '<button id="__kz_yes" style="flex:1;padding:14px;border-radius:12px;border:none;background:#4f46e5;color:#fff;font-size:15px;font-weight:800;cursor:pointer;">Submit &#10003;</button>' +
+            '</div></div>';
+
+        document.body.appendChild(ov);
+
+        function closeOv(){ var o = document.getElementById('__kz_ov'); if(o) o.remove(); }
+
+        var yesBtn = document.getElementById('__kz_yes');
+        var noBtn  = document.getElementById('__kz_no');
+        yesBtn.addEventListener('click',    function(){ closeOv(); onYes(); });
+        yesBtn.addEventListener('touchend', function(e){ e.preventDefault(); closeOv(); onYes(); });
+        noBtn.addEventListener('click',     closeOv);
+        noBtn.addEventListener('touchend',  function(e){ e.preventDefault(); closeOv(); });
+    }
+
+    window.addEventListener('load', function(){
+        var btn = document.getElementById('submitBtn');
+        if (!btn) return;
+
+        var newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+
+        var busy = false;
+        function handleSubmit(){
+            if (busy) return;
+            busy = true;
+            setTimeout(function(){ busy = false; }, 600);
+
+            var unattempted = 0;
+            try {
+                if (typeof questions !== 'undefined' && typeof answers !== 'undefined') {
+                    unattempted = questions.length - Object.keys(answers).length;
+                }
+            } catch(e){}
+
+            var msg = 'Are you sure you want to submit the quiz?';
+            if (unattempted > 0) {
+                msg += '\n\nYou have ' + unattempted + ' unanswered question(s).';
+            }
+
+            showKagaziConfirm(msg, function(){
+                if (typeof submitQuiz === 'function') submitQuiz();
+            });
+        }
+
+        newBtn.addEventListener('click',    handleSubmit);
+        newBtn.addEventListener('touchend', function(e){ e.preventDefault(); handleSubmit(); });
+    });
+})();
+<\/script>`;
+                    // MathJax v3 injection — renders LaTeX like \(\frac{...}{...}\) properly
+                    const mathJaxScript = `
+<script>
+MathJax = {
+    tex: {
+        inlineMath: [['\\\\(', '\\\\)']],
+        displayMath: [['\\\\[', '\\\\]']]
+    },
+    options: {
+        skipHtmlTags: ['script','noscript','style','textarea','pre']
+    }
+};
+<\/script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>
+<script>
+window.addEventListener('load', function(){
+    function tryTypeset(el) {
+        if (window.MathJax && MathJax.typesetPromise) {
+            MathJax.typesetPromise(el ? [el] : []).catch(function(){});
+        }
+    }
+    // Watch #questionText for changes (question navigation)
+    var qEl = document.getElementById('questionText');
+    if (qEl) {
+        var obs = new MutationObserver(function(){ tryTypeset(qEl); });
+        obs.observe(qEl, { childList: true, subtree: true });
+    }
+    // Also watch options area
+    var optsEl = document.querySelector('.options') || document.getElementById('optionsContainer');
+    if (optsEl) {
+        var obs2 = new MutationObserver(function(){ tryTypeset(optsEl); });
+        obs2.observe(optsEl, { childList: true, subtree: true });
+    }
+    // Initial render after MathJax loads
+    var mjScript = document.getElementById('MathJax-script');
+    if (mjScript) {
+        mjScript.addEventListener('load', function(){
+            setTimeout(function(){ tryTypeset(document.body); }, 300);
+        });
+    }
+});
+<\/script>`;
+                    document.getElementById("quizIframe").srcdoc = mathJaxScript + antiFreezeScript + quizNode.quizHTML;
+                    document.getElementById("activeQuizTitle").innerText = quizNode.name;
+                    document.getElementById("fullQuizFrameOverlay").style.display = "flex";
+                }
+            }
+            
+            // Quit button → show numpad with all 3 exit options
+            function confirmQuizQuit() {
+                if (!activeQuizNodeForScoring) return;
+                // Close iframe first
+                document.getElementById("fullQuizFrameOverlay").style.display = "none";
+                document.getElementById("quizIframe").srcdoc = "";
+                // Open numpad in "quit mode" — shows all 3 buttons
+                openScoreEntryModal(null, true);
+            }
+
+            // mode: quitMode=true shows 3 buttons, false shows only Save
+            function openScoreEntryModal(preFilledScore, quitMode) {
+                if (!activeQuizNodeForScoring) return;
+                if (preFilledScore) {
+                    numpadValue = preFilledScore;
+                } else {
+                    numpadValue = (activeQuizNodeForScoring.score && activeQuizNodeForScoring.score !== "-" && activeQuizNodeForScoring.score !== "Pending") ? activeQuizNodeForScoring.score : "";
+                }
+                document.getElementById("scoreModalTitle").innerText = `Score: ${activeQuizNodeForScoring.name}`;
+                updateNumpadDisplay();
+                // Show/hide quit mode buttons
+                const quitBtns = document.getElementById("quitModeButtons");
+                const cancelBtn = document.getElementById("scoreModalCancelBtn");
+                if (quitMode) {
+                    quitBtns.style.display = "flex";
+                    cancelBtn.style.display = "none"; // No cancel in quit mode — must choose
+                } else {
+                    quitBtns.style.display = "none";
+                    cancelBtn.style.display = "block";
+                }
+                document.getElementById("scoreEntryModal").classList.add("active");
+            }
+
+            function closeScoreModal() {
+                document.getElementById("scoreEntryModal").classList.remove("active");
+            }
+
+            // ⏸️ Accidental Exit — marks Incomplete, clears crash guard
+            function markAccidentalExit() {
+                if (!activeQuizNodeForScoring) return;
+                activeQuizNodeForScoring.status = "Incomplete";
+                activeQuizNodeForScoring.score = "-";
+                localStorage.removeItem("kz_crash_guard");
+                saveData();
+                activeQuizNodeForScoring = null;
+                closeScoreModal();
+                if (activeView === "syllabus") renderSyllabusListView(); else renderMindMapCanvas();
+            }
+
+            // 🗑️ Discard
+            function discardAndQuit() {
+                if (!activeQuizNodeForScoring) return;
+                activeQuizNodeForScoring.status = "Discarded";
+                activeQuizNodeForScoring.score = "-";
+                localStorage.removeItem("kz_crash_guard");
+                saveData();
+                activeQuizNodeForScoring = null;
+                closeScoreModal();
+                if (activeView === "syllabus") renderSyllabusListView(); else renderMindMapCanvas();
+            }
+            
+            function updateNumpadDisplay() {
+                document.getElementById("numpadDisplay").innerText = numpadValue || "-- / --";
+            }
+            
+            function pressNumpad(key) {
+                if (key === 'backspace') {
+                    numpadValue = numpadValue.slice(0, -1);
+                } else {
+                    if (key === '/' && numpadValue.includes('/')) return;
+                    if (numpadValue.length >= 10) return;
+                    numpadValue += key;
+                }
+                updateNumpadDisplay();
+            }
+            
+            function saveNumpadScore() {
+                if (!activeQuizNodeForScoring) return;
+                let val = numpadValue.trim();
+                if (!val) return;
+
+                let parts = val.split('/');
+                if (parts.length !== 2 || isNaN(parseFloat(parts[0])) || isNaN(parseFloat(parts[1])) || parseFloat(parts[1]) === 0) {
+                    triggerIOSAlert("Invalid Score", "Format: 45/50 (score/total)", false, null, { buttons: [{text: "OK", styleClass: "btn-accent"}], stacked: true });
+                    return;
+                }
+
+                let pct = (parseFloat(parts[0]) / parseFloat(parts[1])) * 100;
+                if (!activeQuizNodeForScoring.highestPct || pct >= activeQuizNodeForScoring.highestPct) {
+                    activeQuizNodeForScoring.highestPct = pct;
+                    activeQuizNodeForScoring.highestScore = val;
+                }
+                if (!activeQuizNodeForScoring.attempts) activeQuizNodeForScoring.attempts = [];
+                activeQuizNodeForScoring.attempts.push(val);
+                if (activeQuizNodeForScoring.attempts.length > 5) activeQuizNodeForScoring.attempts.shift();
+
+                activeQuizNodeForScoring.status = "Attempted";
+                activeQuizNodeForScoring.score = val;
+
+                localStorage.removeItem("kz_crash_guard"); // Proper exit
+                saveData();
+                document.getElementById("fullQuizFrameOverlay").style.display = "none";
+                document.getElementById("quizIframe").srcdoc = "";
+                activeQuizNodeForScoring = null;
+                closeScoreModal();
+                if (activeView === "syllabus") renderSyllabusListView(); else renderMindMapCanvas();
+            }
+
+            // Legacy — kept for safety (not used now but harmless)
+            function quitFromScoreModal() {
+                discardAndQuit();
+            }
+            
+            // ================= MIND MAP =================
+            const MAP_GAP_X = 500; const MAP_GAP_Y = 120;
+            
+            function populateExamSelect() {
+                mapExamSelect.innerHTML = ""; if(treeData.length === 0) { mapExamSelect.innerHTML = "<option>No Exams</option>"; return; }
+                treeData.forEach(exam => { let opt = document.createElement("option"); opt.value = exam.id; opt.innerText = exam.name; mapExamSelect.appendChild(opt); });
+                if(selectedMapExamId && treeData.find(e => e.id === selectedMapExamId)) { mapExamSelect.value = selectedMapExamId; }
+                else { selectedMapExamId = treeData[0].id; mapExamSelect.value = selectedMapExamId; localStorage.setItem('kagazi_last_exam', selectedMapExamId); }
+            }
+            mapExamSelect.onchange = (e) => { selectedMapExamId = e.target.value; localStorage.setItem('kagazi_last_exam', selectedMapExamId); renderMindMapCanvas(); centerMindMap(); };
+            
+            function renderMindMapCanvas() {
+                mapNodesLayer.innerHTML = ""; svgTraceLayer.innerHTML = ""; if (treeData.length === 0) return;
+                let rootNode = treeData.find(e => e.id === selectedMapExamId) || treeData[0];
+                const positionsRegistry = {}; const centerX = 5000, centerY = 5000;
+                if (currentLayout === "radial") {
+                    positionsRegistry[rootNode.id] = { x: centerX, y: centerY, direction: "center" }; compileDomNodeBoxCard(rootNode, centerX, centerY, "center", positionsRegistry);
+                    const branches = rootNode.children || [];
+                    if (rootNode.isExpanded && branches.length > 0) { const midpoint = Math.ceil(branches.length / 2); calculateBranchCoordinateStack(branches.slice(0, midpoint), centerX - MAP_GAP_X, centerY, "left", positionsRegistry); calculateBranchCoordinateStack(branches.slice(midpoint), centerX + MAP_GAP_X, centerY, "right", positionsRegistry); }
+                } else {
+                    positionsRegistry[rootNode.id] = { x: centerX - 800, y: centerY, direction: "right" }; compileDomNodeBoxCard(rootNode, centerX - 800, centerY, "right", positionsRegistry);
+                    if (rootNode.isExpanded && rootNode.children) calculateBranchCoordinateStack(rootNode.children, centerX - 800 + MAP_GAP_X, centerY, "right", positionsRegistry);
+                }
+                
+                setTimeout(() => { drawBezierVectorTraces(rootNode, positionsRegistry); }, 10);
+            }
+            
+            function calculateBranchCoordinateStack(branches, startX, centerY, direction, registry) {
+                const totalHeightBoundary = getSubtreeVerticalHeightSpan(branches); let cumulativeY = centerY - totalHeightBoundary / 2;
+                branches.forEach(branch => {
+                    const branchHeight = getSubtreeVerticalHeightSpan([branch]); const calculatedNodeY = cumulativeY + branchHeight / 2;
+                    registry[branch.id] = { x: startX, y: calculatedNodeY, direction: direction }; compileDomNodeBoxCard(branch, startX, calculatedNodeY, direction, registry);
+                    if (branch.isExpanded && branch.children && branch.children.length > 0) { calculateBranchCoordinateStack(branch.children, direction === "left" ? startX - MAP_GAP_X : startX + MAP_GAP_X, calculatedNodeY, direction, registry); }
+                    cumulativeY += branchHeight;
+                });
+            }
+            
+            function getSubtreeVerticalHeightSpan(nodes) {
+                if (!nodes || nodes.length === 0) return MAP_GAP_Y; 
+                let h = 0; nodes.forEach(n => { h += (n.isExpanded && n.children && n.children.length > 0) ? getSubtreeVerticalHeightSpan(n.children) : MAP_GAP_Y; }); return h;
+            }
+            
+            function compileDomNodeBoxCard(node, x, y, direction, registry) {
+                const wrapper = document.createElement("div"); 
+                wrapper.id = "map-node-" + node.id;
+                wrapper.className = `map-node-wrapper level-${node.type.toLowerCase()} dir-${direction}`; wrapper.style.left = `${x}px`; wrapper.style.top = `${y}px`;
+                let isQuiz = node.type === "Quiz"; let statusClass = isQuiz ? `status-${(node.status || "Pending").toLowerCase()}` : "";
+                if(statusClass) wrapper.classList.add(statusClass);
+                
+                let subHTML = "";
+                let attemptsHTML = "";
+                if(isQuiz) {
+                    if (node.status === "Incomplete") {
+                        subHTML = `<span class="map-node-sub" style="color:var(--color-warning)">⏸️ Incomplete</span>`;
+                    } else if (node.status === "Discarded") {
+                        subHTML = `<span class="map-node-sub" style="color:var(--color-danger)">🗑️ Discarded</span>`;
+                    } else if (node.status === "Attempted" && node.attempts && node.attempts.length > 0) {
+                        // Max chip glows, rest normal
+                        const chips = node.attempts.slice(-5).map(a => {
+                            const isMax = node.highestScore === a;
+                            return `<span class="attempt-chip${isMax?' is-max':''}">${isMax?'🔥':''}${a}</span>`;
+                        }).join('');
+                        attemptsHTML = `<div class="map-node-attempts">${chips}</div>`;
+                    } else if (!node.status || node.status === "Pending") {
+                        subHTML = `<span class="map-node-sub">⏳ Pending</span>`;
+                    }
+                }
+                
+                wrapper.innerHTML = `<div class="map-node-card"><div class="map-node-info-text"><span class="map-node-title">${node.name}</span>${subHTML}${attemptsHTML}</div></div>`;
+                
+                if (node.children && node.children.length > 0) { 
+                    const expander = document.createElement("div"); expander.className = "node-expander-btn"; expander.innerText = node.isExpanded ? "➖" : "➕"; 
+                    expander.onpointerdown = (e) => e.stopPropagation(); expander.onclick = (e) => { e.stopPropagation(); node.isExpanded = !node.isExpanded; saveData(); renderMindMapCanvas(); }; 
+                    wrapper.appendChild(expander); 
+                }
+                
+                attachGestures(wrapper.querySelector('.map-node-card'), node, true); mapNodesLayer.appendChild(wrapper);
+            }
+            
+            function drawBezierVectorTraces(node, registry) {
+                if (!node.isExpanded || !node.children) return; 
+                const parentCoords = registry[node.id]; if (!parentCoords) return;
+                
+                let pElem = document.getElementById("map-node-" + node.id);
+                let pOffset = pElem ? (pElem.getBoundingClientRect().width / (2 * scale)) : 100;
+                
+                node.children.forEach(child => {
+                    const childCoords = registry[child.id];
+                    if (childCoords) {
+                        let cElem = document.getElementById("map-node-" + child.id);
+                        let cOffset = cElem ? (cElem.getBoundingClientRect().width / (2 * scale)) : 100;
+                        
+                        let pX = parentCoords.x; let cX = childCoords.x;
+                        
+                        if (childCoords.direction === 'right') { pX += pOffset; cX -= cOffset; } 
+                        else if (childCoords.direction === 'left') { pX -= pOffset; cX += cOffset; }
+                        else if (childCoords.direction === 'center') {
+                            if(childCoords.x > parentCoords.x) { pX += pOffset; cX -= cOffset; } else { pX -= pOffset; cX += cOffset; }
+                        }
+                        
+                        const path = document.createElementNS("http://www.w3.org/2000/svg", "path"); 
+                        let controlMidpointX = (pX + cX) / 2;
+                        path.setAttribute("d", `M ${pX} ${parentCoords.y} C ${controlMidpointX} ${parentCoords.y}, ${controlMidpointX} ${childCoords.y}, ${cX} ${childCoords.y}`);
+                        path.setAttribute("stroke", node.type === "Exam" ? "var(--accent-indigo)" : "var(--border-light)"); path.setAttribute("stroke-width", "4"); path.setAttribute("fill", "none");
+                        svgTraceLayer.appendChild(path); drawBezierVectorTraces(child, registry);
+                    }
+                });
+            }
+            
+            function deleteNodeFromDatabase(nodes, id) { let idx = nodes.findIndex(n => n.id === id); if (idx !== -1) { nodes.splice(idx, 1); return true; } for (let n of nodes) { if (n.children && deleteNodeFromDatabase(n.children, id)) return true; } return false; }
+            
+            function centerMindMap() {
+                const vpWidth = mapViewport.clientWidth || window.innerWidth; const vpHeight = mapViewport.clientHeight || window.innerHeight;
+                scale = 1.0; panOffset.x = (vpWidth / 2) - (5000 * scale); panOffset.y = (vpHeight / 2) - (5000 * scale);
+                if(currentLayout === "tree") panOffset.x += 800; applyTransformationPlane();
+            }
+            function applyTransformationPlane() { mapCanvas.style.transform = `translate(${panOffset.x}px, ${panOffset.y}px) scale(${scale})`; }
+            
+            function zoomCenter(factor) {
+                const vpWidth = mapViewport.clientWidth || window.innerWidth; const vpHeight = mapViewport.clientHeight || window.innerHeight;
+                zoomFocal(scale * factor, vpWidth/2, vpHeight/2);
+            }
+            
+            function zoomFocal(newScale, focalX, focalY) {
+                newScale = Math.min(Math.max(newScale, 0.1), 15.0); let scaleRatio = newScale / scale;
+                panOffset.x = focalX - (focalX - panOffset.x) * scaleRatio; panOffset.y = focalY - (focalY - panOffset.y) * scaleRatio;
+                scale = newScale; applyTransformationPlane();
+            }
+            
+            mapViewport.addEventListener("pointerdown", (e) => { if (e.target.closest('.map-node-card') || e.target.closest('.node-expander-btn') || e.target.closest('.map-controls-panel') || e.target.closest('.floating-hud-compass')) return; isDragging = true; startX = e.clientX - panOffset.x; startY = e.clientY - panOffset.y; mapViewport.setPointerCapture(e.pointerId); });
+            mapViewport.addEventListener("pointermove", (e) => { if (isDragging) { panOffset.x = e.clientX - startX; panOffset.y = e.clientY - startY; applyTransformationPlane(); } });
+            mapViewport.addEventListener("pointerup", (e) => { isDragging = false; mapViewport.releasePointerCapture(e.pointerId); });
+            mapViewport.addEventListener("wheel", (e) => { e.preventDefault(); const rect = mapViewport.getBoundingClientRect(); zoomFocal(e.deltaY < 0 ? scale * 1.1 : scale * 0.9, e.clientX - rect.left, e.clientY - rect.top); }, { passive: false });
+            
+            let initialPinchDist = null; let initialPinchScale = 1; let pinchFocalX = 0, pinchFocalY = 0;
+            mapViewport.addEventListener("touchstart", (e) => { 
+                if (e.touches.length === 2) { isDragging = false; initialPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); initialPinchScale = scale; const rect = mapViewport.getBoundingClientRect(); pinchFocalX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left; pinchFocalY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top; } 
+            }, {passive: false});
+            mapViewport.addEventListener("touchmove", (e) => { if (e.touches.length === 2 && initialPinchDist) { e.preventDefault(); const currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); zoomFocal(initialPinchScale * (currentDist / initialPinchDist), pinchFocalX, pinchFocalY); } }, {passive: false});
+            mapViewport.addEventListener("touchend", (e) => { if (e.touches.length < 2) initialPinchDist = null; });
+            
+            document.getElementById("mapLayoutSelect").onchange = (e) => { currentLayout = e.target.value; renderMindMapCanvas(); centerMindMap(); };
+            document.getElementById("tabBtnSyllabus").onclick = (e) => { document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active")); e.target.classList.add("active"); activeView = "syllabus"; viewSyllabus.classList.add("active"); viewMindMap.classList.remove("active"); renderSyllabusListView(); };
+            document.getElementById("tabBtnMindMap").onclick = (e) => { document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active")); e.target.classList.add("active"); activeView = "mindmap"; viewSyllabus.classList.remove("active"); viewMindMap.classList.add("active"); populateExamSelect(); renderMindMapCanvas(); setTimeout(centerMindMap, 50); };
+            
+            // Initialization Sequence
+            applyUserData();
+            initLockSystem();
+            // ── CRASH DETECTION ──────────────────────────────────
+            (function checkCrashGuard() {
+                const raw = localStorage.getItem("kz_crash_guard");
+                if (!raw) return;
+                try {
+                    const guard = JSON.parse(raw);
+                    if (!guard || !guard.id) { localStorage.removeItem("kz_crash_guard"); return; }
+                    function findNode(nodes, id) {
+                        for (let n of nodes) {
+                            if (n.id === id) return n;
+                            if (n.children) { let f = findNode(n.children, id); if (f) return f; }
+                        }
+                        return null;
+                    }
+                    const node = findNode(treeData, guard.id);
+                    if (!node) { localStorage.removeItem("kz_crash_guard"); return; }
+                    localStorage.removeItem("kz_crash_guard");
+                    setTimeout(() => {
+                        triggerIOSAlert(
+                            "⚡ Abrupt Exit Detected",
+                            `"${guard.name}" last session properly close nahi hua.\n\nKya karna chahte ho?`,
+                            false, null, {
+                                buttons: [
+                                    { text: "▶️ Reopen Quiz", styleClass: "btn-accent", action: () => { launchRealQuiz(node); }},
+                                    { text: "⏸️ Mark Incomplete", action: () => { node.status = "Incomplete"; node.score = "-"; saveData(); renderSyllabusListView(); }},
+                                    { text: "Ignore", styleClass: "btn-cancel" }
+                                ], stacked: true
+                            }
+                        );
+                    }, 500);
+                } catch(e) { localStorage.removeItem("kz_crash_guard"); }
+            })();
+
+            populateExamSelect(); 
+            renderSyllabusListView(); 
+            setTimeout(centerMindMap, 100); 
+            // (global badge removed)
+        </script>
+    </body>
+</html>
