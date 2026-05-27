@@ -1070,6 +1070,32 @@ window.addEventListener('load', function(){
         });
     }
 });
+<\/script>
+<script>
+(function(){
+    function fixImgs(){
+        document.querySelectorAll('img').forEach(function(img){
+            img.referrerPolicy='no-referrer';
+            function tryFix(){
+                var s=img.getAttribute('src')||'';
+                // Extract direct URL from oliveboard proxy
+                var m=s.match(/https?:\/\/[^/]*oliveboard[^/]*\/[^?#]*(https?:\/\/.+)/);
+                if(m&&m[1]&&m[1]!==s){img.src=decodeURIComponent(m[1]);return;}
+                // Cache-bust retry with no-referrer
+                if(s&&!img.__nr){
+                    img.__nr=true;
+                    img.src=s+(s.indexOf('?')>-1?'&':'?')+'_kz='+Date.now();
+                }
+            }
+            img.addEventListener('error',tryFix,{once:true});
+            if(img.complete&&img.naturalWidth===0&&img.getAttribute('src'))tryFix();
+        });
+    }
+    window.addEventListener('load',function(){
+        fixImgs();
+        new MutationObserver(fixImgs).observe(document.body,{childList:true,subtree:true});
+    });
+})();
 <\/script>`;
                     document.getElementById("quizIframe").srcdoc = mathJaxScript + antiFreezeScript + quizNode.quizHTML;
                     document.getElementById("activeQuizTitle").innerText = quizNode.name;
